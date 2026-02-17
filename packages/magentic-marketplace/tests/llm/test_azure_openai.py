@@ -1,7 +1,7 @@
 """Integration tests for Azure OpenAI LLM client."""
 
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from openai.types.chat import ChatCompletionUserMessageParam

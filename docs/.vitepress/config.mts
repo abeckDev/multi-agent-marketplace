@@ -48,6 +48,7 @@ export default withMermaid(
               items: [
                 { text: "Overview", link: "/usage/cli-intro" },
                 { text: "Run", link: "/usage/cli-run" },
+                { text: "API Server", link: "/usage/cli-api" },
                 { text: "Analyze", link: "/usage/cli-analyze" },
                 { text: "Export", link: "/usage/cli-export" },
                 { text: "List", link: "/usage/cli-list" },

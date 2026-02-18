@@ -1,0 +1,24 @@
+id: 3
+name: "APPLE iPad Wi-Fi (11th generation)"
+description: "APPLE iPad Wi-Fi (11th generation), Tablet, 128 GB, 11 Zoll, Blau"
+rating: 4.6
+product_features:
+  brand: "APPLE"
+  category: "Computers & Tablets"
+  screen_size: "11 Zoll"
+  storage: "128 GB"
+  connectivity: "Wi-Fi"
+  color: "Blau"
+  price: 333.0
+  original_price: 379.0
+  discount_percent: 12
+  energy_rating: "G"
+amenity_features:
+  free_shipping: true
+  cashback: false
+  sponsored: false
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 3
+min_price_factor: 0.88

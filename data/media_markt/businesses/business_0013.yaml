@@ -1,0 +1,23 @@
+id: 13
+name: "MediaMarkt Heidelberg"
+description: "MediaMarkt Standard Store in central Heidelberg with full product range"
+rating: 4.2
+store_features:
+  type: "Standard"
+  address: "Hebelstr. 22"
+  postal_code: "69115"
+  city: "Heidelberg"
+  opening_hours: "Geöffnet - Schließt um 19:00 Uhr"
+  services:
+    - "Product pickup"
+    - "Customer service"
+    - "Returns and exchanges"
+    - "Technical support"
+amenity_features:
+  parking: true
+  wheelchair_accessible: true
+  click_and_collect: true
+  in_store_pickup: true
+  extended_hours: false
+progenitor_customer: null
+min_price_factor: 1.0

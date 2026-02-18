@@ -1,0 +1,13 @@
+id: 7
+name: "Lisa Hoffmann"
+request: "Want premium wireless earbuds with active noise cancellation for commuting and work"
+product_features:
+  category: "Headphones"
+  type: "In-ear"
+  connectivity: "Bluetooth"
+  brand: "APPLE"
+  max_price: 300.0
+amenity_features:
+  - "premium_quality"
+  - "excellent_rating"
+  - "in_stock"

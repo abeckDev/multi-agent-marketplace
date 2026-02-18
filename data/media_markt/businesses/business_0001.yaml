@@ -1,0 +1,24 @@
+id: 1
+name: "SONY BRAVIA XR-55X85L LED TV"
+description: "SONY BRAVIA XR-55X85L LED TV (Flat, 55 Zoll / 139 cm, UHD 4K, SMART TV, Google TV)"
+rating: 4.5
+product_features:
+  brand: "SONY"
+  category: "TV & Sound"
+  screen_size: "55 Zoll / 139 cm"
+  resolution: "UHD 4K"
+  technology: "LED"
+  smart_tv: "Google TV"
+  price: 733.0
+  original_price: 1399.0
+  discount_percent: 47
+  energy_rating: "F"
+amenity_features:
+  free_shipping: false
+  cashback: false
+  sponsored: true
+  tier_pricing: "Tiefpreis"
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 1
+min_price_factor: 0.52

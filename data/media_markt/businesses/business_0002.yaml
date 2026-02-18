@@ -1,0 +1,24 @@
+id: 2
+name: "APPLE MacBook Air (2025)"
+description: "APPLE MacBook Air (2025), M4 12 3D/A Notebook, Apple M4 M4 - 13.6 Zoll Display, 16 GB RAM, 512 GB SSD"
+rating: 4.7
+product_features:
+  brand: "APPLE"
+  category: "Computers & Tablets"
+  processor: "Apple M4"
+  screen_size: "13.6 Zoll"
+  ram: "16 GB"
+  storage: "512 GB SSD"
+  price: 899.0
+  original_price: 1099.0
+  discount_percent: 18
+  energy_rating: null
+amenity_features:
+  free_shipping: true
+  cashback: false
+  sponsored: false
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 2
+min_price_factor: 0.82

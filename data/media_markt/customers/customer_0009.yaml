@@ -1,0 +1,12 @@
+id: 9
+name: "Sophie Klein"
+request: "Looking for an electric scooter for daily commute, needs good range and build quality"
+product_features:
+  category: "E-Mobility"
+  type: "E-Scooter"
+  wheel_size_min: "10 Zoll"
+  max_price: 900.0
+amenity_features:
+  - "free_shipping"
+  - "good_rating"
+  - "in_stock"

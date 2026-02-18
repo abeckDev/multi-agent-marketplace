@@ -1,0 +1,24 @@
+id: 5
+name: "APPLE iPhone 17 Pro 5G"
+description: "APPLE iPhone 17 Pro 5G 256 GB Silber Dual SIM"
+rating: 4.8
+product_features:
+  brand: "APPLE"
+  category: "Smartphones"
+  storage: "256 GB"
+  connectivity: "5G"
+  color: "Silber"
+  sim: "Dual SIM"
+  price: 1279.0
+  original_price: 1279.0
+  discount_percent: 0
+  energy_rating: "A"
+amenity_features:
+  free_shipping: true
+  cashback: false
+  sponsored: false
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 5
+min_price_factor: 1.0

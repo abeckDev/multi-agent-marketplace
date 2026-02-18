@@ -1,0 +1,12 @@
+id: 4
+name: "Anna Becker"
+request: "Want to upgrade to a premium OLED TV for the best picture quality, willing to invest in quality"
+product_features:
+  category: "TV & Sound"
+  technology: "OLED"
+  resolution: "OLED 4K"
+  screen_size_min: "60 Zoll"
+  max_price: 2500.0
+amenity_features:
+  - "cashback_available"
+  - "premium_quality"

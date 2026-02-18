@@ -1,0 +1,28 @@
+id: 14
+name: "MediaMarkt Smart Heidelberg"
+description: "MediaMarkt Smart Store concept in Heidelberg with modern digital shopping experience and expert consultation"
+rating: 4.6
+store_features:
+  type: "Smart"
+  address: "Hauptstr. 57"
+  postal_code: "69117"
+  city: "Heidelberg"
+  opening_hours: "Geöffnet - Schließt um 19:00 Uhr"
+  services:
+    - "Expert consultation"
+    - "Product demonstrations"
+    - "Smart home setup"
+    - "Product pickup"
+    - "Customer service"
+    - "Returns and exchanges"
+    - "Technical support"
+amenity_features:
+  parking: true
+  wheelchair_accessible: true
+  click_and_collect: true
+  in_store_pickup: true
+  extended_hours: false
+  expert_consultation: true
+  smart_store: true
+progenitor_customer: null
+min_price_factor: 1.0

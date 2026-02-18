@@ -1,0 +1,12 @@
+id: 6
+name: "David Schneider"
+request: "Looking for an affordable 5G smartphone with good specs, don't need flagship features"
+product_features:
+  category: "Smartphones"
+  connectivity: "5G"
+  storage_min: "128 GB"
+  max_price: 400.0
+amenity_features:
+  - "on_sale"
+  - "free_shipping"
+  - "good_rating"

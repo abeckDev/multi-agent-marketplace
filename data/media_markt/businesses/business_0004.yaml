@@ -1,0 +1,25 @@
+id: 4
+name: "LG OLED65G5GLS OLED evo TV"
+description: "LG OLED65G5GLS OLED evo TV (Flat, 65 Zoll / 165 cm, OLED 4K, SMART TV, webOS)"
+rating: 4.5
+product_features:
+  brand: "LG"
+  category: "TV & Sound"
+  screen_size: "65 Zoll / 165 cm"
+  resolution: "OLED 4K"
+  technology: "OLED"
+  smart_tv: "webOS"
+  price: 1799.0
+  original_price: 3999.0
+  discount_percent: 55
+  energy_rating: "E"
+amenity_features:
+  free_shipping: false
+  cashback: true
+  cashback_amount: 200.0
+  sponsored: true
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 4
+min_price_factor: 0.45

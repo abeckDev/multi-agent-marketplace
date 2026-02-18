@@ -1,0 +1,12 @@
+id: 1
+name: "Thomas Mueller"
+request: "I'm looking for a large 4K TV with smart features for my living room, preferably on sale"
+product_features:
+  category: "TV & Sound"
+  resolution: "UHD 4K"
+  screen_size_min: "50 Zoll"
+  smart_tv: true
+  max_price: 800.0
+amenity_features:
+  - "on_sale"
+  - "good_rating"

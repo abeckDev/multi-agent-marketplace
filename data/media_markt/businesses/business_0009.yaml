@@ -1,0 +1,23 @@
+id: 9
+name: "SEGWAY ZT3 Pro D E-Scooter"
+description: "SEGWAY ZT3 Pro D E-Scooter (11 Zoll, Schwarz / Rot)"
+rating: 4.5
+product_features:
+  brand: "SEGWAY"
+  category: "E-Mobility"
+  type: "E-Scooter"
+  wheel_size: "11 Zoll"
+  color: "Schwarz / Rot"
+  price: 775.99
+  original_price: 849.0
+  discount_percent: 8
+  energy_rating: null
+amenity_features:
+  free_shipping: true
+  cashback: false
+  sponsored: false
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 9
+min_price_factor: 0.91

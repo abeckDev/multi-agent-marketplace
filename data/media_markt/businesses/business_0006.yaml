@@ -1,0 +1,24 @@
+id: 6
+name: "SAMSUNG Galaxy A56 5G"
+description: "SAMSUNG Galaxy A56 5G 256 GB Awesome Graphite Dual SIM"
+rating: 4.4
+product_features:
+  brand: "SAMSUNG"
+  category: "Smartphones"
+  storage: "256 GB"
+  connectivity: "5G"
+  color: "Awesome Graphite"
+  sim: "Dual SIM"
+  price: 329.0
+  original_price: 529.0
+  discount_percent: 37
+  energy_rating: "B"
+amenity_features:
+  free_shipping: true
+  cashback: false
+  sponsored: false
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 6
+min_price_factor: 0.62

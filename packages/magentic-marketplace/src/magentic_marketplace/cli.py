@@ -165,6 +165,20 @@ def run_ui_command(args):
     )
 
 
+def run_api_command(args):
+    """Handle the API subcommand to launch the orchestrator API."""
+    import uvicorn
+
+    from magentic_marketplace.api.main import app
+
+    uvicorn.run(
+        app,
+        host=args.api_host,
+        port=args.api_port,
+        log_level=args.log_level.lower() if hasattr(args, "log_level") else "info",
+    )
+
+
 def main():
     """Run main CLI."""
     parser = argparse.ArgumentParser(
@@ -515,6 +529,32 @@ def main():
         type=int,
         default=DEFAULT_UI_PORT,
         help=f"Port for ui server(default: {DEFAULT_UI_PORT})",
+    )
+
+    # api subcommand
+    api_parser = subparsers.add_parser(
+        "api", help="Launch FastAPI orchestrator API for managing experiments"
+    )
+    api_parser.set_defaults(func=run_api_command)
+
+    api_parser.add_argument(
+        "--api-host",
+        default="0.0.0.0",
+        help="API server host (default: 0.0.0.0)",
+    )
+
+    api_parser.add_argument(
+        "--api-port",
+        type=int,
+        default=8000,
+        help="API server port (default: 8000)",
+    )
+
+    api_parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Logging level (default: INFO)",
     )
 
     # Parse arguments and execute the appropriate function

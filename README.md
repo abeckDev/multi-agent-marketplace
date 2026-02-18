@@ -50,32 +50,93 @@ graph TB
     UIServer -->|"Serve"| Visualizer
 ```
 
+## Getting Started
 
-## CLI (Unchanged)
+### Unified Server (Recommended)
 
-The original CLI still works exactly as before:
+The unified server combines the orchestrator API and visualizer UI in a single process:
 
 ```bash
-# Run via CLI
-magentic-marketplace run data/mexican_3_9 --experiment-name my_exp
+# Launch unified server (orchestrator API only)
+magentic-marketplace serve
 
-# Analyze
-magentic-marketplace analyze my_exp
+# Launch unified server with visualizer for a specific experiment
+magentic-marketplace serve --visualizer-schema my_exp
 
-# Launch visualizer for a specific experiment
-magentic-marketplace ui my_exp
+# Customize host, port, and database settings
+magentic-marketplace serve \
+  --host 0.0.0.0 \
+  --port 8000 \
+  --visualizer-schema my_exp \
+  --postgres-host localhost \
+  --postgres-port 5432 \
+  --postgres-password postgres
 ```
 
-## Cloud Deployment (Azure Container Apps) - planned
+Once running, you can:
+- **Launch experiments**: `POST http://localhost:8000/api/experiments`
+- **View orchestrator API docs**: `http://localhost:8000/docs`
+- **View visualizer UI**: `http://localhost:8000/` (when `--visualizer-schema` is specified)
 
-This fork is designed to run as a single container:
+### Individual Commands
 
+You can also run components separately:
+
+```bash
+# Run an experiment via CLI
+magentic-marketplace run data/mexican_3_9 --experiment-name my_exp
+
+# Launch orchestrator API only
+magentic-marketplace api --api-host 0.0.0.0 --api-port 8000
+
+# Launch visualizer UI only (for a specific experiment)
+magentic-marketplace ui my_exp --ui-host localhost --ui-port 5000
+
+# Analyze experiment results
+magentic-marketplace analyze my_exp
+
+# List all experiments
+magentic-marketplace list
+```
+
+## API Endpoints
+
+### Orchestrator API
+
+- `GET /api/datasets` - List available demo datasets
+- `GET /api/settings` - Get current system settings
+- `POST /api/experiments` - Create and launch a new experiment
+- `GET /api/experiments` - List all experiments from database
+- `GET /api/experiments/{name}/status` - Check experiment status
+- `GET /health` - Health check
+
+### Visualizer API (when `--visualizer-schema` is specified)
+
+- `GET /api/customers` - Get all customers for the experiment
+- `GET /api/businesses` - Get all businesses for the experiment
+- `GET /api/marketplace-data` - Get messages, threads, and analytics
+
+## Cloud Deployment (Azure Container Apps)
+
+This fork is designed to run as a single container using the unified server:
+
+```dockerfile
+# Example Dockerfile (not included yet)
+FROM python:3.11-slim
+WORKDIR /app
+COPY packages/magentic-marketplace /app/magentic-marketplace
+RUN pip install -e magentic-marketplace
+CMD ["magentic-marketplace", "serve", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Deployment steps:
 1. Build the Docker image
 2. Deploy to Azure Container Apps with a PostgreSQL Flexible Server
-3. Set API keys as Container App secrets
-4. Share the URL with colleagues
+3. Set API keys and database credentials as Container App secrets
+4. Optionally specify `--visualizer-schema` to enable the visualizer UI for a default experiment
+5. Share the URL with colleagues
 
-> Bicep/IaC templates are not yet included — contributions welcome!
+> **Note**: Bicep/IaC templates are not yet included — contributions welcome!
 
 ## What's Unchanged from Upstream
 

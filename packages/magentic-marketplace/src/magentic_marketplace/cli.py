@@ -179,6 +179,21 @@ def run_api_command(args):
     )
 
 
+def run_serve_command(args):
+    """Handle the serve subcommand to launch the unified server."""
+    from magentic_marketplace.unified_server import run_unified_server
+
+    run_unified_server(
+        host=args.host,
+        port=args.port,
+        visualizer_schema=args.visualizer_schema,
+        postgres_host=args.postgres_host,
+        postgres_port=args.postgres_port,
+        postgres_password=args.postgres_password,
+        log_level=args.log_level,
+    )
+
+
 def main():
     """Run main CLI."""
     parser = argparse.ArgumentParser(
@@ -551,6 +566,58 @@ def main():
     )
 
     api_parser.add_argument(
+        "--log-level",
+        choices=["DEBUG", "INFO", "WARNING", "ERROR"],
+        default="INFO",
+        help="Logging level (default: INFO)",
+    )
+
+    # serve subcommand (unified server)
+    serve_parser = subparsers.add_parser(
+        "serve",
+        help="Launch unified server with orchestrator API and visualizer UI",
+    )
+    serve_parser.set_defaults(func=run_serve_command)
+
+    serve_parser.add_argument(
+        "--visualizer-schema",
+        default=None,
+        help="PostgreSQL schema name to visualize (optional, enables visualizer UI)",
+    )
+
+    serve_parser.add_argument(
+        "--host",
+        default="0.0.0.0",
+        help="Server host (default: 0.0.0.0)",
+    )
+
+    serve_parser.add_argument(
+        "--port",
+        type=int,
+        default=8000,
+        help="Server port (default: 8000)",
+    )
+
+    serve_parser.add_argument(
+        "--postgres-host",
+        default=os.environ.get("POSTGRES_HOST", "localhost"),
+        help="PostgreSQL host for visualizer (default: POSTGRES_HOST env var or localhost)",
+    )
+
+    serve_parser.add_argument(
+        "--postgres-port",
+        type=int,
+        default=int(os.environ.get("POSTGRES_PORT", DEFAULT_POSTGRES_PORT)),
+        help=f"PostgreSQL port for visualizer (default: POSTGRES_PORT env var or {DEFAULT_POSTGRES_PORT})",
+    )
+
+    serve_parser.add_argument(
+        "--postgres-password",
+        default=os.environ.get("POSTGRES_PASSWORD", "postgres"),
+        help="PostgreSQL password for visualizer (default: POSTGRES_PASSWORD env var or postgres)",
+    )
+
+    serve_parser.add_argument(
         "--log-level",
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         default="INFO",

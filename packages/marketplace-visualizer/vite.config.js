@@ -16,11 +16,13 @@ export default defineConfig({
     emptyOutDir: true,
   },
 
-  // Dev server configuration - proxy API calls to analytics server
+  // Dev server configuration - proxy API calls to backend server
+  // For unified server: use http://localhost:8000
+  // For legacy UI server: use http://localhost:5000
   server: {
     proxy: {
       "/api": {
-        target: "http://localhost:5000",
+        target: process.env.VITE_API_TARGET || "http://localhost:8000",
         changeOrigin: true,
       },
     },

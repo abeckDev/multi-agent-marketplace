@@ -186,6 +186,7 @@ def run_serve_command(args):
     run_unified_server(
         host=args.host,
         port=args.port,
+        visualizer_schema=args.visualizer_schema,
         postgres_host=args.postgres_host,
         postgres_port=args.postgres_port,
         postgres_password=args.postgres_password,
@@ -577,6 +578,12 @@ def main():
         help="Launch unified server with orchestrator API and visualizer UI",
     )
     serve_parser.set_defaults(func=run_serve_command)
+
+    serve_parser.add_argument(
+        "--visualizer-schema",
+        default=None,
+        help="PostgreSQL schema name to visualize (optional, enables visualizer UI)",
+    )
 
     serve_parser.add_argument(
         "--host",

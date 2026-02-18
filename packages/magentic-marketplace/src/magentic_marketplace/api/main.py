@@ -27,11 +27,61 @@ from magentic_marketplace.marketplace.llm.config import ALLOWED_LLM_PROVIDERS
 
 logger = logging.getLogger(__name__)
 
-# Create FastAPI app
+# Create FastAPI app with comprehensive OpenAPI metadata
 app = FastAPI(
     title="Magentic Marketplace Orchestrator API",
-    description="API for launching and managing marketplace experiments",
+    description="""
+    ## Magentic Marketplace Orchestrator API
+
+    This API provides REST endpoints for launching and managing AI-powered marketplace experiments.
+
+    ### Features
+
+    * **Dataset Management**: List and explore available demo datasets
+    * **Experiment Control**: Create, launch, and monitor marketplace simulation experiments
+    * **Status Tracking**: Real-time monitoring of experiment progress and completion
+    * **Historical Data**: Query previous experiments from PostgreSQL database
+    * **System Configuration**: Access available LLM providers and system defaults
+
+    ### Getting Started
+
+    1. Use `/api/datasets` to list available datasets
+    2. Check `/api/settings` for available LLM providers and defaults
+    3. Create an experiment with `/api/experiments` (POST)
+    4. Monitor progress with `/api/experiments/{name}/status`
+    5. View historical experiments with `/api/experiments` (GET)
+
+    ### Authentication
+
+    Currently, no authentication is required for local development.
+    """,
     version="1.0.0",
+    contact={
+        "name": "Magentic Marketplace",
+        "url": "https://github.com/abeckDev/multi-agent-marketplace",
+    },
+    license_info={
+        "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
+    },
+    openapi_tags=[
+        {
+            "name": "datasets",
+            "description": "Operations for discovering and listing available marketplace datasets",
+        },
+        {
+            "name": "experiments",
+            "description": "Create, monitor, and manage marketplace simulation experiments",
+        },
+        {
+            "name": "settings",
+            "description": "System configuration and available options",
+        },
+        {
+            "name": "health",
+            "description": "Service health and status checks",
+        },
+    ],
 )
 
 # In-memory experiment tracking
@@ -101,15 +151,29 @@ async def run_experiment_background(
         logger.error(f"Experiment failed: {experiment_name} - {e}")
 
 
-@app.get("/api/datasets", response_model=list[DatasetInfo])
+@app.get(
+    "/api/datasets",
+    response_model=list[DatasetInfo],
+    tags=["datasets"],
+    summary="List available datasets",
+    response_description="List of datasets with metadata including agent counts",
+)
 async def list_datasets():
-    """List available demo datasets.
+    """List available demo datasets for marketplace experiments.
 
     Scans the data directory for folders containing both 'businesses/' and 'customers/'
-    subdirectories, which indicates a valid dataset.
+    subdirectories, which indicates a valid dataset. Each dataset contains YAML files
+    defining business and customer agents for simulation.
 
     Returns:
-        List of available datasets with metadata
+        List of available datasets with metadata including:
+        - Dataset name
+        - Full filesystem path
+        - Number of business agents
+        - Number of customer agents
+
+    Raises:
+        HTTPException: 404 if data directory does not exist
 
     """
     data_dir = get_data_directory()
@@ -158,12 +222,22 @@ async def list_datasets():
     return datasets
 
 
-@app.get("/api/settings", response_model=SettingsResponse)
+@app.get(
+    "/api/settings",
+    response_model=SettingsResponse,
+    tags=["settings"],
+    summary="Get system settings and defaults",
+    response_description="Current system configuration and available options",
+)
 async def get_settings():
-    """Return current default settings and available models.
+    """Get current default settings and available LLM providers.
 
     Returns system defaults and configuration options that can be used
-    when creating new experiments.
+    when creating new experiments. This includes:
+    - Default search algorithm for customer agents
+    - Default search bandwidth (result limits)
+    - Default PostgreSQL connection settings
+    - List of available LLM providers (OpenAI, Anthropic, Azure, etc.)
 
     Returns:
         Current system settings and defaults
@@ -178,26 +252,47 @@ async def get_settings():
     )
 
 
-@app.post("/api/experiments", response_model=ExperimentStatus)
+@app.post(
+    "/api/experiments",
+    response_model=ExperimentStatus,
+    tags=["experiments"],
+    summary="Create and launch a new experiment",
+    response_description="Initial experiment status (pending)",
+    status_code=202,
+)
 async def create_experiment(
     experiment_config: ExperimentCreate,
     background_tasks: BackgroundTasks,
 ):
-    """Create and launch a new experiment in the background.
+    """Create and launch a new marketplace experiment in the background.
 
     Accepts configuration for a marketplace experiment and launches it as a
     background task. The experiment will continue running independently and
     its status can be monitored via the status endpoint.
 
+    The experiment involves:
+    - Loading business and customer agents from the specified dataset
+    - Running a marketplace simulation where customers search for and interact with businesses
+    - Storing all agent actions, interactions, and logs in PostgreSQL
+    - Optionally exporting results to SQLite
+
     Args:
-        experiment_config: Configuration for the experiment
-        background_tasks: FastAPI background tasks manager
+        experiment_config: Configuration for the experiment including:
+            - dataset: Name or path to dataset directory
+            - experiment_name: Optional custom name (auto-generated if not provided)
+            - search_algorithm: Customer search strategy (default: "simple")
+            - search_bandwidth: Number of search results to return (default: 10)
+            - postgres_*: Database connection settings
+            - export_*: Optional SQLite export configuration
+        background_tasks: FastAPI background tasks manager (injected)
 
     Returns:
-        Initial experiment status
+        Initial experiment status with "pending" state
 
     Raises:
-        HTTPException: If dataset is invalid or experiment name already exists
+        HTTPException:
+            - 400 if dataset is invalid or experiment name already exists
+            - 404 if dataset directory not found
 
     """
     # Validate dataset
@@ -265,21 +360,33 @@ async def create_experiment(
     return status
 
 
-@app.get("/api/experiments/{name}/status", response_model=ExperimentStatus)
+@app.get(
+    "/api/experiments/{name}/status",
+    response_model=ExperimentStatus,
+    tags=["experiments"],
+    summary="Get experiment status",
+    response_description="Current status of the specified experiment",
+)
 async def get_experiment_status(name: str):
-    """Check the progress/status of a specific experiment.
+    """Check the progress and status of a specific experiment.
 
     Returns the current status of an experiment, including whether it's
-    pending, running, completed, or failed.
+    pending, running, completed, or failed. Also includes timestamps for
+    start and completion times, and error messages if the experiment failed.
 
     Args:
-        name: The experiment name (schema name)
+        name: The experiment name (schema name in database)
 
     Returns:
-        Current experiment status
+        Current experiment status including:
+        - name: Experiment identifier
+        - status: One of "pending", "running", "completed", or "failed"
+        - started_at: Timestamp when experiment started (if running/completed)
+        - completed_at: Timestamp when experiment finished (if completed/failed)
+        - error: Error message if status is "failed"
 
     Raises:
-        HTTPException: If experiment not found
+        HTTPException: 404 if experiment not found in tracker
 
     """
     if name not in experiment_tracker:
@@ -290,7 +397,13 @@ async def get_experiment_status(name: str):
     return experiment_tracker[name]
 
 
-@app.get("/api/experiments", response_model=list[ExperimentInfo])
+@app.get(
+    "/api/experiments",
+    response_model=list[ExperimentInfo],
+    tags=["experiments"],
+    summary="List all experiments from database",
+    response_description="List of completed and running experiments with metadata",
+)
 async def list_experiments(
     limit: int | None = None,
     host: str = "localhost",
@@ -299,24 +412,36 @@ async def list_experiments(
     user: str = "postgres",
     password: str = "postgres",
 ):
-    """List previous and running experiments from PostgreSQL.
+    """List previous and running experiments from PostgreSQL database.
 
     Queries the PostgreSQL database to list all experiment schemas with their
-    metadata including activity timestamps and record counts.
+    metadata including activity timestamps, agent counts, action counts, and
+    LLM providers used. Each experiment is stored as a separate schema in the
+    database.
 
     Args:
-        limit: Maximum number of experiments to return
-        host: PostgreSQL host
-        port: PostgreSQL port
-        database: Database name
-        user: Database user
-        password: Database password
+        limit: Maximum number of experiments to return (default: all)
+        host: PostgreSQL host (default: "localhost")
+        port: PostgreSQL port (default: 5432)
+        database: Database name (default: "marketplace")
+        user: Database user (default: "postgres")
+        password: Database password (default: "postgres")
 
     Returns:
-        List of experiments with metadata
+        List of experiments with metadata including:
+        - schema_name: Experiment identifier in database
+        - first_activity: Timestamp of first agent registration
+        - last_activity: Timestamp of most recent activity
+        - agents_count: Total number of agents in experiment
+        - actions_count: Total number of actions logged
+        - logs_count: Total number of log entries
+        - llm_providers: List of LLM providers used in experiment
 
     Raises:
-        HTTPException: If database connection fails
+        HTTPException:
+            - 404 if database does not exist
+            - 401 if database password is invalid
+            - 500 if database connection or query fails
 
     """
     try:
@@ -467,12 +592,23 @@ async def list_experiments(
         ) from e
 
 
-@app.get("/health")
+@app.get(
+    "/health",
+    tags=["health"],
+    summary="Health check endpoint",
+    response_description="Service health status",
+)
 async def health_check():
-    """Health check endpoint.
+    """Health check endpoint for monitoring and load balancers.
+
+    Returns a simple JSON response indicating the service is healthy and
+    accepting requests. This endpoint can be used by:
+    - Load balancers for health checks
+    - Monitoring systems to verify service availability
+    - Container orchestration platforms (e.g., Kubernetes liveness probes)
 
     Returns:
-        Simple health status
+        Simple health status: {"status": "healthy"}
 
     """
     return {"status": "healthy"}

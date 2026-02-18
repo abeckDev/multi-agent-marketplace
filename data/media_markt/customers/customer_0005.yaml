@@ -1,0 +1,13 @@
+id: 5
+name: "Julia Fischer"
+request: "Need the latest iPhone with good camera and enough storage for photos and apps"
+product_features:
+  category: "Smartphones"
+  brand: "APPLE"
+  storage_min: "256 GB"
+  connectivity: "5G"
+  max_price: 1500.0
+amenity_features:
+  - "latest_model"
+  - "free_shipping"
+  - "in_stock"

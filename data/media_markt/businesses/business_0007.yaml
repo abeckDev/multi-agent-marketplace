@@ -1,0 +1,23 @@
+id: 7
+name: "APPLE AirPods Pro 3"
+description: "APPLE AirPods Pro 3, In-ear Kopfhörer Bluetooth White"
+rating: 4.9
+product_features:
+  brand: "APPLE"
+  category: "Headphones"
+  type: "In-ear"
+  connectivity: "Bluetooth"
+  color: "White"
+  price: 239.0
+  original_price: 239.0
+  discount_percent: 0
+  energy_rating: null
+amenity_features:
+  free_shipping: true
+  cashback: false
+  sponsored: false
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 7
+min_price_factor: 1.0

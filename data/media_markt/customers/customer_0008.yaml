@@ -1,0 +1,13 @@
+id: 8
+name: "Max Zimmermann"
+request: "Need a gaming console for my kids with popular games included, Nintendo preferred"
+product_features:
+  category: "Gaming"
+  type: "Console"
+  brand: "NINTENDO"
+  bundle_preferred: true
+  max_price: 600.0
+amenity_features:
+  - "free_shipping"
+  - "game_bundle"
+  - "in_stock"

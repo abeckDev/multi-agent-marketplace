@@ -1,0 +1,11 @@
+id: 3
+name: "Michael Wagner"
+request: "Looking for a tablet for my daughter to use for school and entertainment, budget-friendly"
+product_features:
+  category: "Computers & Tablets"
+  type: "Tablet"
+  screen_size_min: "10 Zoll"
+  max_price: 400.0
+amenity_features:
+  - "free_shipping"
+  - "good_energy_rating"

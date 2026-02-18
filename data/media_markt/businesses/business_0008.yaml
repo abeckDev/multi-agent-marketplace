@@ -1,0 +1,22 @@
+id: 8
+name: "NINTENDO Switch 2 + Mario Kart"
+description: "NINTENDO Switch 2 + Mario Kart World Spielekonsole"
+rating: 4.6
+product_features:
+  brand: "NINTENDO"
+  category: "Gaming"
+  type: "Console"
+  bundle: "Mario Kart World"
+  price: 489.0
+  original_price: 489.0
+  discount_percent: 0
+  energy_rating: null
+amenity_features:
+  free_shipping: true
+  cashback: false
+  sponsored: false
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 8
+min_price_factor: 1.0

@@ -1,0 +1,12 @@
+id: 2
+name: "Sarah Schmidt"
+request: "Need a lightweight laptop for office work and video calls, Apple preferred with good battery life"
+product_features:
+  category: "Computers & Tablets"
+  brand: "APPLE"
+  type: "Notebook"
+  ram_min: "8 GB"
+  max_price: 1200.0
+amenity_features:
+  - "free_shipping"
+  - "in_stock"

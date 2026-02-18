@@ -1,0 +1,25 @@
+id: 10
+name: "MSI MAG 244CDE Gaming Monitor"
+description: "MSI MAG 244CDE 23,6 Zoll Full-HD Curved Gaming Monitor 1 ms Reaktionszeit, 180 Hz"
+rating: 4.2
+product_features:
+  brand: "MSI"
+  category: "Monitors"
+  screen_size: "23.6 Zoll"
+  resolution: "Full-HD"
+  refresh_rate: "180 Hz"
+  response_time: "1 ms"
+  curved: true
+  price: 79.0
+  original_price: 129.0
+  discount_percent: 38
+  energy_rating: "D"
+amenity_features:
+  free_shipping: true
+  cashback: false
+  sponsored: false
+  tier_pricing: null
+  in_stock: true
+  price_includes_vat: true
+progenitor_customer: 10
+min_price_factor: 0.61

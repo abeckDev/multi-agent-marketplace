@@ -1,0 +1,25 @@
+id: 12
+name: "MediaMarkt Heidelberg-Rohrbach (im Einkaufszentrum)"
+description: "MediaMarkt Store in Heidelberg-Rohrbach shopping center with comprehensive electronics range"
+rating: 4.4
+store_features:
+  type: "Standard"
+  address: "Hertzstr. 1"
+  postal_code: "69126"
+  city: "Heidelberg"
+  opening_hours: "Geöffnet - Schließt um 19:00 Uhr"
+  services:
+    - "Product pickup"
+    - "Customer service"
+    - "Returns and exchanges"
+    - "Technical support"
+    - "Shopping center parking"
+amenity_features:
+  parking: true
+  wheelchair_accessible: true
+  click_and_collect: true
+  in_store_pickup: true
+  extended_hours: false
+  shopping_center: true
+progenitor_customer: null
+min_price_factor: 1.0

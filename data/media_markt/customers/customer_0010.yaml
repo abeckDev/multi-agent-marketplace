@@ -1,0 +1,13 @@
+id: 10
+name: "Patrick Weber"
+request: "Need a curved gaming monitor with high refresh rate for competitive gaming, budget-conscious"
+product_features:
+  category: "Monitors"
+  curved: true
+  refresh_rate_min: "144 Hz"
+  resolution: "Full-HD"
+  max_price: 150.0
+amenity_features:
+  - "on_sale"
+  - "fast_response_time"
+  - "free_shipping"

@@ -1,0 +1,23 @@
+id: 16
+name: "MediaMarkt Neckarsulm"
+description: "MediaMarkt Store in Neckarsulm with comprehensive electronics and home appliance selection"
+rating: 4.4
+store_features:
+  type: "Standard"
+  address: "Rötelstraße 33"
+  postal_code: "74172"
+  city: "Neckarsulm"
+  opening_hours: "Geöffnet - Schließt um 19:00 Uhr"
+  services:
+    - "Product pickup"
+    - "Customer service"
+    - "Returns and exchanges"
+    - "Technical support"
+amenity_features:
+  parking: true
+  wheelchair_accessible: true
+  click_and_collect: true
+  in_store_pickup: true
+  extended_hours: false
+progenitor_customer: null
+min_price_factor: 1.0

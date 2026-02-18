@@ -49,27 +49,26 @@ def create_unified_app(
         Configured unified FastAPI application
 
     """
-    # Use the orchestrator app as the base
-    app = orchestrator_api.app
-
-    # Update app metadata
-    app.title = "Magentic Marketplace Unified Server"
-    app.description = "Unified API for experiment orchestration and visualization"
-
-    # Enable CORS for frontend access (if not already added)
-    # Check if CORS middleware already exists
-    has_cors = any(
-        isinstance(middleware, CORSMiddleware)
-        for middleware in getattr(app, "user_middleware", [])
+    # Create a new FastAPI app
+    app = FastAPI(
+        title="Magentic Marketplace Unified Server",
+        description="Unified API for experiment orchestration and visualization",
+        version="1.0.0",
     )
-    if not has_cors:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=["*"],
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
+
+    # Enable CORS for frontend access
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    # Include orchestrator routes from the orchestrator app
+    # We copy the routes instead of mounting to avoid path prefix issues
+    for route in orchestrator_api.app.routes:
+        app.router.routes.append(route)
 
     # Add visualizer API routes if schema is provided
     if visualizer_schema:

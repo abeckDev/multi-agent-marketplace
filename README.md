@@ -1,77 +1,107 @@
-# Magentic Marketplace
+# Magentic Marketplace — Hosted Demo Edition [Vision to be implemented]
 
-[Documentation](https://microsoft.github.io/multi-agent-marketplace/) | [Paper](https://arxiv.org/abs/2510.25779)
+> 🍴 **This is a fork of [microsoft/multi-agent-marketplace](https://github.com/microsoft/multi-agent-marketplace)** with added web-based orchestration and a hosted deployment model for customer demos.
 
+[![Upstream](https://img.shields.io/badge/upstream-microsoft%2Fmulti--agent--marketplace-blue)](https://github.com/microsoft/multi-agent-marketplace)
+[![Paper](https://img.shields.io/badge/arXiv-2510.25779-b31b1b)](https://arxiv.org/abs/2510.25779)
 
-**Magentic Marketplace** is a Python framework for simulating AI-powered markets. Configure LLM-based buyer and seller agents, run realistic marketplace simulations, and measure economic outcomes like welfare, fairness, and efficiency.
+## What's Different in This Fork?
 
-<div align="center">
+The original **Magentic Marketplace** is a Python framework for simulating AI-powered markets via CLI. This fork adds a **hosted web experience** so colleagues can run and explore marketplace simulations from their browser — no local setup required.
 
-   <video src="https://github.com/user-attachments/assets/5b897387-d96c-4e7a-9bd2-b6c53eaeabb9" style="max-height: 450px;">
-   </video>
-</div>
+### New Features
 
+- 🌐 **Web Dashboard** — Configure LLM models, pick datasets, and launch experiments from a browser UI
+- 🔌 **Orchestrator REST API** — Programmatically trigger and monitor experiment runs (`POST /api/experiments`)
+- 📊 **Integrated Visualizer** — Seamlessly transition from launching an experiment to exploring results
+- 🏗️ **Single-Process Deployment** — Dashboard, API, and visualizer served from one FastAPI app, ready for Azure Container Apps
 
-## What can you do with this?
+## Architecture
 
-- **Evaluate LLM models** - Compare how different models (OpenAI, Claude, Gemini, local models) perform as marketplace agents
-- **Test market designs** - Experiment with different search algorithms, communication protocols, and marketplace rules
-- **Study agent behavior** - Measure welfare outcomes, identify biases, and test resistance to manipulation
-- **Extend to new domains** - Adapt the framework beyond restaurants/contractors to other two-sided markets
+```mermaid
+graph TB
+    subgraph "Browser"
+        Dashboard["Dashboard UI<br/><i>Configure & Launch</i>"]
+        Visualizer["Visualizer UI<br/><i>Explore Results</i>"]
+    end
 
-## Quick Start
+    subgraph "Unified FastAPI Server"
+        API["Orchestrator API<br/>/api/experiments<br/>/api/datasets<br/>/api/settings"]
+        UIServer["Static File Server<br/>React SPA"]
+        VisAPI["Visualizer API<br/>/api/customers<br/>/api/businesses<br/>/api/marketplace-data"]
+    end
 
-1. Configure your environment
+    subgraph "Core Engine"
+        Runner["run_marketplace_experiment()"]
+        Analytics["run_analytics()"]
+    end
 
-   ```bash
-   # Clone the repo
-   git clone https://github.com/microsoft/multi-agent-marketplace.git
-   cd multi-agent-marketplace
+    DB[("PostgreSQL<br/>Schema per Experiment")]
 
-   # Install dependencies with `uv`. Install from https://docs.astral.sh/uv/
-   uv sync --all-extras
-   source .venv/bin/activate
-
-   # Configure environment variables in .env. Edit in favorite editor
-   cp sample.env .env
-
-   # Start the database server
-   docker compose up -d
-   ```
-
-2. Run simulations and analyze the outputs
-
-   ```bash
-   # Run an experiment (experiment name is optional)
-   magentic-marketplace run data/mexican_3_9 --experiment-name test_exp
-
-   # Analyze the results
-   magentic-marketplace analyze test_exp
-   ```
-
-   You can also run experiments from python scripts, see [experiments/example.py](experiments/example.py).
-
-   View more CLI options with `magentic-marketplace --help`.
-
-## FAQ
-
-- [How can I test my LLM?](https://microsoft.github.io/multi-agent-marketplace/usage/env.html)
-- [How can I access the log and evaluate?](https://microsoft.github.io/multi-agent-marketplace/usage/cli-analyze.html)
-
-[**Check out the docs for more info.**](https://microsoft.github.io/multi-agent-marketplace/)
-
-## Citation
-
-If you use this work, please cite:
-
+    Dashboard -->|"REST calls"| API
+    API -->|"Background task"| Runner
+    Runner -->|"Write results"| DB
+    API -->|"List/status"| DB
+    Dashboard -->|"View results link"| Visualizer
+    Visualizer -->|"Fetch data"| VisAPI
+    VisAPI -->|"Read"| DB
+    Analytics -->|"Read"| DB
+    UIServer -->|"Serve"| Dashboard
+    UIServer -->|"Serve"| Visualizer
 ```
+
+
+## CLI (Unchanged)
+
+The original CLI still works exactly as before:
+
+```bash
+# Run via CLI
+magentic-marketplace run data/mexican_3_9 --experiment-name my_exp
+
+# Analyze
+magentic-marketplace analyze my_exp
+
+# Launch visualizer for a specific experiment
+magentic-marketplace ui my_exp
+```
+
+## Cloud Deployment (Azure Container Apps) - planned
+
+This fork is designed to run as a single container:
+
+1. Build the Docker image
+2. Deploy to Azure Container Apps with a PostgreSQL Flexible Server
+3. Set API keys as Container App secrets
+4. Share the URL with colleagues
+
+> Bicep/IaC templates are not yet included — contributions welcome!
+
+## What's Unchanged from Upstream
+
+- ✅ Core marketplace simulation engine
+- ✅ All agent logic (buyer/seller agents, protocols)
+- ✅ CLI commands (`run`, `analyze`, `export`, `list`, `ui`, `audit`, `extract-traces`)
+- ✅ Data generation scripts
+- ✅ Existing visualizer UI functionality
+- ✅ Python API (`run_marketplace_experiment()`, `run_analytics()`)
+
+## Credits
+
+This project is built on top of **[Magentic Marketplace](https://github.com/microsoft/multi-agent-marketplace)** by Microsoft Research. If you use this work, please cite the original paper:
+
+```bibtex
 @misc{bansal-arxiv-2025,
-      title={Magentic Marketplace: An Open-Source Environment for Studying Agentic Markets}, 
+      title={Magentic Marketplace: An Open-Source Environment for Studying Agentic Markets},
       author={Gagan Bansal and Wenyue Hua and Zezhou Huang and Adam Fourney and Amanda Swearngin and Will Epperson and Tyler Payne and Jake M. Hofman and Brendan Lucier and Chinmay Singh and Markus Mobius and Akshay Nambi and Archana Yadav and Kevin Gao and David M. Rothschild and Aleksandrs Slivkins and Daniel G. Goldstein and Hussein Mozannar and Nicole Immorlica and Maya Murad and Matthew Vogel and Subbarao Kambhampati and Eric Horvitz and Saleema Amershi},
       year={2025},
       eprint={2510.25779},
       archivePrefix={arXiv},
       primaryClass={cs.MA},
-      url={https://arxiv.org/abs/2510.25779}, 
+      url={https://arxiv.org/abs/2510.25779},
 }
 ```
+
+## License
+
+See the [upstream repository](https://github.com/microsoft/multi-agent-marketplace) for license details.

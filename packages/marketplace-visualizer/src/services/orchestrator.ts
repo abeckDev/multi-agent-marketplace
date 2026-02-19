@@ -103,7 +103,9 @@ class OrchestratorService {
    * Get status of a specific experiment
    */
   async getExperimentStatus(name: string): Promise<ExperimentStatus> {
-    return this.fetchJson<ExperimentStatus>(`${API_BASE_URL}/experiments/${encodeURIComponent(name)}/status`);
+    return this.fetchJson<ExperimentStatus>(
+      `${API_BASE_URL}/experiments/${encodeURIComponent(name)}/status`,
+    );
   }
 
   /**

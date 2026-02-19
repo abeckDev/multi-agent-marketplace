@@ -24,6 +24,7 @@ magentic-marketplace serve --host 0.0.0.0 --port 8000
 ```
 
 Then open your browser to:
+
 - **Dashboard**: http://localhost:8000/dashboard - Launch and manage experiments
 - **API Docs**: http://localhost:8000/docs - View API documentation
 - **Visualizer**: http://localhost:8000/ - View experiment results (requires running experiment)

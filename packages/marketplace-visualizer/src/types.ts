@@ -101,3 +101,19 @@ export interface MarketplaceData {
   messageThreads: MessageThread[];
   analytics?: AnalyticsData;
 }
+
+// Log streaming types
+export interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string | null;
+  data: Record<string, unknown> | null;
+  agent_id: string | null;
+}
+
+export interface LogStreamMessage {
+  type: "log" | "status" | "error";
+  log?: LogEntry;
+  status?: string;
+  error?: string;
+}

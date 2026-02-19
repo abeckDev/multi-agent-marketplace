@@ -13,7 +13,9 @@ import {
 function Dashboard() {
   const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
   const [experiments, setExperiments] = useState<ExperimentInfo[]>([]);
-  const [runningExperiments, setRunningExperiments] = useState<Map<string, ExperimentStatus>>(new Map());
+  const [runningExperiments, setRunningExperiments] = useState<Map<string, ExperimentStatus>>(
+    new Map(),
+  );
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -237,7 +239,10 @@ function Dashboard() {
 
               {/* Experiment Name */}
               <div>
-                <label htmlFor="experimentName" className="mb-1 block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="experimentName"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
                   Experiment Name <span className="text-xs text-gray-500">(optional)</span>
                 </label>
                 <input
@@ -269,7 +274,10 @@ function Dashboard() {
 
               {/* Search Bandwidth */}
               <div>
-                <label htmlFor="searchBandwidth" className="mb-1 block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="searchBandwidth"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
                   Search Bandwidth
                 </label>
                 <input
@@ -284,7 +292,10 @@ function Dashboard() {
 
               {/* Customer Max Steps */}
               <div>
-                <label htmlFor="customerMaxSteps" className="mb-1 block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="customerMaxSteps"
+                  className="mb-1 block text-sm font-medium text-gray-700"
+                >
                   Customer Max Steps <span className="text-xs text-gray-500">(optional)</span>
                 </label>
                 <input
@@ -305,7 +316,10 @@ function Dashboard() {
                 <h3 className="text-sm font-semibold text-gray-700">PostgreSQL Settings</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="postgresHost" className="mb-1 block text-xs font-medium text-gray-600">
+                    <label
+                      htmlFor="postgresHost"
+                      className="mb-1 block text-xs font-medium text-gray-600"
+                    >
                       Host
                     </label>
                     <input
@@ -317,7 +331,10 @@ function Dashboard() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="postgresPort" className="mb-1 block text-xs font-medium text-gray-600">
+                    <label
+                      htmlFor="postgresPort"
+                      className="mb-1 block text-xs font-medium text-gray-600"
+                    >
                       Port
                     </label>
                     <input
@@ -330,7 +347,10 @@ function Dashboard() {
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="postgresPassword" className="mb-1 block text-xs font-medium text-gray-600">
+                  <label
+                    htmlFor="postgresPassword"
+                    className="mb-1 block text-xs font-medium text-gray-600"
+                  >
                     Password
                   </label>
                   <input
@@ -393,7 +413,9 @@ function Dashboard() {
                         </div>
                       </div>
                       <div className="text-xs text-gray-600">
-                        {status.started_at && <div>Started: {formatTimestamp(status.started_at)}</div>}
+                        {status.started_at && (
+                          <div>Started: {formatTimestamp(status.started_at)}</div>
+                        )}
                         {status.completed_at && (
                           <div>Completed: {formatTimestamp(status.completed_at)}</div>
                         )}

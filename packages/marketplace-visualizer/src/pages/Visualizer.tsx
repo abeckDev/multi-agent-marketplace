@@ -138,7 +138,9 @@ function Visualizer() {
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-gray-100">
         <div className="text-center">
           <h2 className="mb-2 text-2xl font-bold text-gray-800">No Experiment Selected</h2>
-          <p className="text-gray-600">Please select an experiment from the dashboard to view results.</p>
+          <p className="text-gray-600">
+            Please select an experiment from the dashboard to view results.
+          </p>
         </div>
       </div>
     );

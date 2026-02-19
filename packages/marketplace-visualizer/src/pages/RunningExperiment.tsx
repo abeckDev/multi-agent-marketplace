@@ -92,7 +92,7 @@ function RunningExperiment() {
       onStatus: (newStatus) => {
         setExperimentStatus(newStatus);
         setStatus("connected");
-        
+
         // Auto-redirect when completed
         if (newStatus === "completed") {
           setTimeout(() => {

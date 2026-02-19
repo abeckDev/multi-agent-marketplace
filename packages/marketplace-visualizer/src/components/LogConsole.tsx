@@ -148,7 +148,7 @@ function LogConsole({ logs, autoScroll = true }: LogConsoleProps) {
 
                 {/* Additional Data */}
                 {log.data && (
-                  <div className="mt-1 ml-20 text-gray-500">
+                  <div className="ml-20 mt-1 text-gray-500">
                     <pre className="whitespace-pre-wrap break-words">{formatLogData(log.data)}</pre>
                   </div>
                 )}

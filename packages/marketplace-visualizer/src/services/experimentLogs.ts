@@ -47,7 +47,7 @@ export class ExperimentLogStream {
 
     this.intentionallyClosed = false;
     const params = new URLSearchParams();
-    
+
     if (this.options.since) params.append("since", this.options.since);
     if (this.options.host) params.append("host", this.options.host);
     if (this.options.port) params.append("port", this.options.port.toString());
@@ -70,7 +70,7 @@ export class ExperimentLogStream {
       this.ws.onmessage = (event) => {
         try {
           const message: LogStreamMessage = JSON.parse(event.data);
-          
+
           switch (message.type) {
             case "log":
               if (message.log) {
@@ -99,7 +99,7 @@ export class ExperimentLogStream {
 
       this.ws.onclose = () => {
         this.options.onDisconnect?.();
-        
+
         // Only attempt reconnection if not intentionally closed and within retry limits
         if (!this.intentionallyClosed && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.scheduleReconnect();
@@ -134,7 +134,7 @@ export class ExperimentLogStream {
    */
   close(): void {
     this.intentionallyClosed = true;
-    
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;

@@ -113,6 +113,153 @@ Check the status of a specific experiment.
 
 Status values: `pending`, `running`, `completed`, `failed`
 
+### `GET /api/experiments/{name}/logs`
+
+Get recent logs for a specific experiment (REST fallback for clients that cannot use WebSockets).
+
+**Query Parameters:**
+- `since` (optional): Get logs after this timestamp (ISO 8601 format)
+- `limit` (optional): Maximum number of logs to return (1-1000, default: 100)
+- `host` (optional): PostgreSQL host (default: localhost)
+- `port` (optional): PostgreSQL port (default: 5432)
+- `database` (optional): Database name (default: marketplace)
+- `user` (optional): Database user (default: postgres)
+- `password` (optional): Database password (default: postgres)
+
+**Response:**
+```json
+{
+  "logs": [
+    {
+      "timestamp": "2024-02-18T04:32:00Z",
+      "level": "info",
+      "message": "Customer agent registered",
+      "data": {"customer_id": "customer_001"},
+      "agent_id": "customer_001"
+    }
+  ],
+  "total": 150,
+  "has_more": true
+}
+```
+
+**Example:**
+```bash
+# Get latest 50 logs
+curl "http://localhost:8000/api/experiments/my_experiment/logs?limit=50"
+
+# Get logs since a specific time
+curl "http://localhost:8000/api/experiments/my_experiment/logs?since=2024-02-18T04:32:00Z"
+```
+
+### `WS /api/experiments/{name}/logs/ws`
+
+Stream live logs for a running experiment via WebSocket. Provides real-time log updates.
+
+**Query Parameters:**
+- `since` (optional): Start streaming from this timestamp (ISO 8601 format)
+- `host` (optional): PostgreSQL host (default: localhost)
+- `port` (optional): PostgreSQL port (default: 5432)
+- `database` (optional): Database name (default: marketplace)
+- `user` (optional): Database user (default: postgres)
+- `password` (optional): Database password (default: postgres)
+
+**WebSocket Message Format:**
+
+Messages sent from server to client:
+
+```json
+{
+  "type": "log",
+  "log": {
+    "timestamp": "2024-02-18T04:32:00Z",
+    "level": "info",
+    "message": "Customer agent registered",
+    "data": {"customer_id": "customer_001"},
+    "agent_id": "customer_001"
+  }
+}
+```
+
+```json
+{
+  "type": "status",
+  "status": "completed"
+}
+```
+
+```json
+{
+  "type": "error",
+  "error": "Connection error message"
+}
+```
+
+**Message Types:**
+- `log`: Contains a single log entry in the `log` field
+- `status`: Sent when experiment status changes (completed/failed), contains status in `status` field
+- `error`: Sent when an error occurs, contains error message in `error` field
+
+**WebSocket Client Example (JavaScript):**
+```javascript
+const ws = new WebSocket('ws://localhost:8000/api/experiments/my_experiment/logs/ws');
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  
+  if (message.type === 'log') {
+    console.log(`[${message.log.level}] ${message.log.message}`);
+  } else if (message.type === 'status') {
+    console.log(`Experiment ${message.status}`);
+    ws.close();
+  } else if (message.type === 'error') {
+    console.error(`Error: ${message.error}`);
+  }
+};
+
+ws.onerror = (error) => {
+  console.error('WebSocket error:', error);
+};
+```
+
+**WebSocket Client Example (Python):**
+```python
+import asyncio
+import websockets
+import json
+
+async def stream_logs(experiment_name):
+    uri = f"ws://localhost:8000/api/experiments/{experiment_name}/logs/ws"
+    
+    async with websockets.connect(uri) as websocket:
+        while True:
+            try:
+                message = await websocket.recv()
+                data = json.loads(message)
+                
+                if data['type'] == 'log':
+                    log = data['log']
+                    print(f"[{log['level']}] {log['message']}")
+                elif data['type'] == 'status':
+                    print(f"Experiment {data['status']}")
+                    break
+                elif data['type'] == 'error':
+                    print(f"Error: {data['error']}")
+                    break
+            except websockets.exceptions.ConnectionClosed:
+                break
+
+# Run the stream
+asyncio.run(stream_logs('my_experiment'))
+```
+
+**Behavior:**
+- The WebSocket connection streams logs in real-time as they are generated
+- Logs are polled from the database every 500ms
+- When the experiment completes or fails, a final status message is sent and the connection closes
+- If the client disconnects, resources are cleaned up automatically
+- Schema/experiment names are validated to prevent SQL injection
+
 ### `GET /api/experiments`
 
 List all experiments stored in PostgreSQL.
@@ -245,6 +392,31 @@ When creating experiments via `POST /api/experiments`, all CLI options are suppo
 - **In-Memory Tracking**: Lightweight status tracking for running experiments
 - **PostgreSQL Integration**: Query historical experiment data
 - **OpenAPI Support**: Auto-generated documentation and client libraries
+- **WebSocket Support**: Real-time log streaming for running experiments
+
+## Security
+
+### Schema Name Validation
+
+All experiment/schema names are validated to prevent SQL injection attacks:
+
+- **Allowed**: Alphanumeric characters (a-z, A-Z, 0-9) and underscores (_)
+- **Must not start with**: A digit
+- **Blocked**: Special characters like `;`, `-`, `.`, `'`, `"`, `/`, `\`, `$`, etc.
+
+Examples:
+- ✅ `my_experiment_123`
+- ✅ `marketplace_10_5_1234567890`
+- ❌ `test-experiment` (hyphen not allowed)
+- ❌ `test;DROP TABLE` (SQL injection attempt)
+- ❌ `123experiment` (cannot start with digit)
+
+This validation applies to:
+- `GET /api/experiments/{name}/logs`
+- `WS /api/experiments/{name}/logs/ws`
+- `GET /api/experiments/{name}/status`
+
+Invalid names return a 400 Bad Request error with a clear error message.
 
 ## Notes
 

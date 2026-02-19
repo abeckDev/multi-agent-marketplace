@@ -8,20 +8,25 @@ This module provides REST API endpoints for:
 - Retrieving current system settings
 """
 
+import asyncio
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
 import asyncpg
-from fastapi import BackgroundTasks, FastAPI, HTTPException
+from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
 
 from magentic_marketplace.api.models import (
     DatasetInfo,
     ExperimentCreate,
     ExperimentInfo,
     ExperimentStatus,
+    LogEntry,
+    LogsResponse,
+    LogStreamMessage,
     SettingsResponse,
 )
+from magentic_marketplace.api.utils import validate_schema_name
 from magentic_marketplace.experiments.run_experiment import run_marketplace_experiment
 from magentic_marketplace.marketplace.llm.config import ALLOWED_LLM_PROVIDERS
 
@@ -465,6 +470,351 @@ async def list_experiments(
         raise HTTPException(
             status_code=500, detail=f"Failed to list experiments: {str(e)}"
         ) from e
+
+
+@app.get("/api/experiments/{name}/logs", response_model=LogsResponse)
+async def get_experiment_logs(
+    name: str,
+    since: str | None = Query(None, description="Get logs after this timestamp (ISO format)"),
+    limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs to return"),
+    host: str = Query("localhost", description="PostgreSQL host"),
+    port: int = Query(5432, description="PostgreSQL port"),
+    database: str = Query("marketplace", description="Database name"),
+    user: str = Query("postgres", description="Database user"),
+    password: str = Query("postgres", description="Database password"),
+):
+    """Get recent logs for a specific experiment (REST fallback).
+
+    This endpoint provides a RESTful way to retrieve logs for clients that
+    cannot use WebSockets. Logs can be filtered by timestamp.
+
+    Args:
+        name: The experiment name (schema name)
+        since: Optional timestamp to get logs after (ISO 8601 format)
+        limit: Maximum number of logs to return (1-1000)
+        host: PostgreSQL host
+        port: PostgreSQL port
+        database: Database name
+        user: Database user
+        password: Database password
+
+    Returns:
+        List of log entries with metadata
+
+    Raises:
+        HTTPException: If experiment not found or invalid
+
+    """
+    # Validate schema name
+    if not validate_schema_name(name):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid experiment name '{name}'. Only alphanumeric characters and underscores are allowed.",
+        )
+
+    try:
+        # Connect to PostgreSQL
+        conn = await asyncpg.connect(
+            host=host,
+            port=port,
+            database=database,
+            user=user,
+            password=password,
+        )
+
+        try:
+            # Check if schema exists
+            schema_exists = await conn.fetchval(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.schemata
+                    WHERE schema_name = $1
+                )
+                """,
+                name,
+            )
+
+            if not schema_exists:
+                raise HTTPException(
+                    status_code=404, detail=f"Experiment '{name}' not found"
+                )
+
+            # Check if logs table exists
+            logs_exists = await conn.fetchval(
+                """
+                SELECT EXISTS (
+                    SELECT 1 FROM information_schema.tables
+                    WHERE table_schema = $1 AND table_name = 'logs'
+                )
+                """,
+                name,
+            )
+
+            if not logs_exists:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Logs table not found for experiment '{name}'",
+                )
+
+            # Build query
+            if since:
+                # Parse timestamp
+                try:
+                    since_dt = datetime.fromisoformat(since.replace("Z", "+00:00"))
+                except ValueError as e:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Invalid timestamp format: {since}",
+                    ) from e
+
+                query = f"""
+                    SELECT created_at, data
+                    FROM {name}.logs
+                    WHERE created_at > $1
+                    ORDER BY created_at ASC
+                    LIMIT $2
+                """
+                rows = await conn.fetch(query, since_dt, limit + 1)
+            else:
+                query = f"""
+                    SELECT created_at, data
+                    FROM {name}.logs
+                    ORDER BY created_at DESC
+                    LIMIT $1
+                """
+                rows = await conn.fetch(query, limit + 1)
+                # Reverse to get chronological order for most recent logs
+                rows = list(reversed(rows))
+
+            # Check if there are more logs
+            has_more = len(rows) > limit
+            if has_more:
+                rows = rows[:limit]
+
+            # Get total count
+            total = await conn.fetchval(f"SELECT COUNT(*) FROM {name}.logs")
+
+            # Convert to LogEntry objects
+            logs = []
+            for row in rows:
+                data = row["data"]
+                log_entry = LogEntry(
+                    timestamp=row["created_at"],
+                    level=data.get("level", "info"),
+                    message=data.get("message"),
+                    data=data.get("data"),
+                    agent_id=data.get("metadata", {}).get("agent_id")
+                    if isinstance(data.get("metadata"), dict)
+                    else None,
+                )
+                logs.append(log_entry)
+
+            return LogsResponse(logs=logs, total=total or 0, has_more=has_more)
+
+        finally:
+            await conn.close()
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get logs for experiment '{name}': {e}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get logs: {str(e)}"
+        ) from e
+
+
+@app.websocket("/api/experiments/{name}/logs/ws")
+async def websocket_experiment_logs(
+    websocket: WebSocket,
+    name: str,
+    since: str | None = Query(None, description="Start streaming from this timestamp"),
+    host: str = Query("localhost", description="PostgreSQL host"),
+    port: int = Query(5432, description="PostgreSQL port"),
+    database: str = Query("marketplace", description="Database name"),
+    user: str = Query("postgres", description="Database user"),
+    password: str = Query("postgres", description="Database password"),
+):
+    """Stream live logs for a running experiment via WebSocket.
+
+    This endpoint provides real-time log streaming for an experiment. It will
+    continue streaming logs until the experiment completes or the client disconnects.
+
+    Args:
+        websocket: WebSocket connection
+        name: The experiment name (schema name)
+        since: Optional timestamp to start streaming from (ISO 8601 format)
+        host: PostgreSQL host
+        port: PostgreSQL port
+        database: Database name
+        user: Database user
+        password: Database password
+
+    """
+    # Validate schema name first
+    if not validate_schema_name(name):
+        await websocket.close(code=1008, reason="Invalid experiment name")
+        return
+
+    await websocket.accept()
+
+    conn = None
+    try:
+        # Connect to PostgreSQL
+        try:
+            conn = await asyncpg.connect(
+                host=host,
+                port=port,
+                database=database,
+                user=user,
+                password=password,
+            )
+        except Exception as e:
+            error_msg = LogStreamMessage(
+                type="error", error=f"Database connection failed: {str(e)}"
+            )
+            await websocket.send_json(error_msg.model_dump())
+            await websocket.close()
+            return
+
+        # Check if schema exists
+        schema_exists = await conn.fetchval(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.schemata
+                WHERE schema_name = $1
+            )
+            """,
+            name,
+        )
+
+        if not schema_exists:
+            error_msg = LogStreamMessage(
+                type="error", error=f"Experiment '{name}' not found"
+            )
+            await websocket.send_json(error_msg.model_dump())
+            await websocket.close()
+            return
+
+        # Check if logs table exists
+        logs_exists = await conn.fetchval(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM information_schema.tables
+                WHERE table_schema = $1 AND table_name = 'logs'
+            )
+            """,
+            name,
+        )
+
+        if not logs_exists:
+            error_msg = LogStreamMessage(
+                type="error", error=f"Logs table not found for experiment '{name}'"
+            )
+            await websocket.send_json(error_msg.model_dump())
+            await websocket.close()
+            return
+
+        # Parse since timestamp if provided
+        last_timestamp = None
+        if since:
+            try:
+                last_timestamp = datetime.fromisoformat(since.replace("Z", "+00:00"))
+            except ValueError:
+                error_msg = LogStreamMessage(
+                    type="error", error=f"Invalid timestamp format: {since}"
+                )
+                await websocket.send_json(error_msg.model_dump())
+                await websocket.close()
+                return
+
+        # Stream logs in a loop
+        poll_interval = 0.5  # Poll every 500ms
+        experiment_running = True
+
+        while experiment_running:
+            try:
+                # Check experiment status
+                exp_status = experiment_tracker.get(name)
+                if exp_status:
+                    current_status = exp_status.status
+                    if current_status in ["completed", "failed"]:
+                        experiment_running = False
+                else:
+                    # If not in tracker, check if there are any new logs recently
+                    # If no logs for a while, assume experiment may be done
+                    pass
+
+                # Query for new logs
+                if last_timestamp:
+                    query = f"""
+                        SELECT created_at, data
+                        FROM {name}.logs
+                        WHERE created_at > $1
+                        ORDER BY created_at ASC
+                        LIMIT 100
+                    """
+                    rows = await conn.fetch(query, last_timestamp)
+                else:
+                    # First fetch - get most recent logs
+                    query = f"""
+                        SELECT created_at, data
+                        FROM {name}.logs
+                        ORDER BY created_at ASC
+                        LIMIT 100
+                    """
+                    rows = await conn.fetch(query)
+
+                # Send new logs
+                for row in rows:
+                    data = row["data"]
+                    log_entry = LogEntry(
+                        timestamp=row["created_at"],
+                        level=data.get("level", "info"),
+                        message=data.get("message"),
+                        data=data.get("data"),
+                        agent_id=data.get("metadata", {}).get("agent_id")
+                        if isinstance(data.get("metadata"), dict)
+                        else None,
+                    )
+                    log_msg = LogStreamMessage(type="log", log=log_entry)
+                    await websocket.send_json(log_msg.model_dump())
+                    last_timestamp = row["created_at"]
+
+                # If experiment completed/failed, send status and close
+                if not experiment_running:
+                    if exp_status:
+                        status_msg = LogStreamMessage(
+                            type="status", status=exp_status.status
+                        )
+                        await websocket.send_json(status_msg.model_dump())
+                    break
+
+                # Wait before next poll
+                await asyncio.sleep(poll_interval)
+
+            except WebSocketDisconnect:
+                logger.info(f"Client disconnected from log stream for '{name}'")
+                break
+            except Exception as e:
+                logger.error(f"Error streaming logs for '{name}': {e}")
+                error_msg = LogStreamMessage(type="error", error=str(e))
+                try:
+                    await websocket.send_json(error_msg.model_dump())
+                except Exception:
+                    pass
+                break
+
+    except WebSocketDisconnect:
+        logger.info(f"Client disconnected from log stream for '{name}'")
+    except Exception as e:
+        logger.error(f"WebSocket error for experiment '{name}': {e}")
+    finally:
+        if conn:
+            await conn.close()
+        try:
+            await websocket.close()
+        except Exception:
+            pass
 
 
 @app.get("/health")

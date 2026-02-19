@@ -1,7 +1,7 @@
 """Pydantic models for API request and response validation."""
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -82,3 +82,36 @@ class SettingsResponse(BaseModel):
     )
     default_postgres_port: int = Field(5432, description="Default PostgreSQL port")
     available_providers: list[str] = Field(..., description="Available LLM providers")
+
+
+class LogEntry(BaseModel):
+    """A single log entry from the database."""
+
+    timestamp: datetime = Field(..., description="Log creation timestamp")
+    level: str = Field(..., description="Log level (debug, info, warning, error)")
+    message: str | None = Field(None, description="Log message")
+    data: dict[str, Any] | None = Field(None, description="Additional log data")
+    agent_id: str | None = Field(None, description="Agent ID if available")
+
+
+class LogStreamMessage(BaseModel):
+    """WebSocket message containing log data or status update."""
+
+    type: Literal["log", "status", "error"] = Field(
+        ..., description="Message type: log entry, status update, or error"
+    )
+    log: LogEntry | None = Field(None, description="Log entry (when type=log)")
+    status: str | None = Field(
+        None, description="Experiment status (when type=status)"
+    )
+    error: str | None = Field(None, description="Error message (when type=error)")
+
+
+class LogsResponse(BaseModel):
+    """Response model for the REST logs endpoint."""
+
+    logs: list[LogEntry] = Field(..., description="List of log entries")
+    total: int = Field(..., description="Total number of logs matching criteria")
+    has_more: bool = Field(
+        ..., description="Whether there are more logs available"
+    )

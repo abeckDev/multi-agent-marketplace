@@ -505,7 +505,9 @@ async def get_experiment_logs(
         HTTPException: If experiment not found or invalid
 
     """
-    # Validate schema name
+    # Validate schema name to prevent SQL injection
+    # After validation, it's safe to use in f-strings for schema/table names
+    # (PostgreSQL doesn't support parameterized identifiers like $1 for schema names)
     if not validate_schema_name(name):
         raise HTTPException(
             status_code=400,
@@ -650,7 +652,9 @@ async def websocket_experiment_logs(
         password: Database password
 
     """
-    # Validate schema name first
+    # Validate schema name to prevent SQL injection
+    # After validation, it's safe to use in f-strings for schema/table names
+    # (PostgreSQL doesn't support parameterized identifiers like $1 for schema names)
     if not validate_schema_name(name):
         await websocket.close(code=1008, reason="Invalid experiment name")
         return

@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle, Info, Terminal, XCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
 
-import { LogEntry } from "../types";
+import { LogEntry } from "../services/orchestrator";
 
 interface LogConsoleProps {
   logs: LogEntry[];

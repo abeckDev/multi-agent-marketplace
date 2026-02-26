@@ -57,6 +57,20 @@ export interface SettingsResponse {
   available_providers: string[];
 }
 
+export interface LogEntry {
+  timestamp: string;
+  level: string;
+  message: string | null;
+  data: Record<string, unknown> | null;
+  agent_id: string | null;
+}
+
+export interface LogsResponse {
+  logs: LogEntry[];
+  total: number;
+  has_more: boolean;
+}
+
 class OrchestratorService {
   private async fetchJson<T>(url: string, options?: RequestInit): Promise<T> {
     const response = await fetch(url, {
@@ -132,6 +146,38 @@ class OrchestratorService {
       : `${API_BASE_URL}/experiments`;
 
     return this.fetchJson<ExperimentInfo[]>(url);
+  }
+
+  /**
+   * Get logs for a specific experiment (REST polling)
+   */
+  async getExperimentLogs(
+    name: string,
+    params?: {
+      since?: string;
+      limit?: number;
+      host?: string;
+      port?: number;
+      database?: string;
+      user?: string;
+      password?: string;
+    },
+  ): Promise<LogsResponse> {
+    const queryParams = new URLSearchParams();
+    if (params?.since) queryParams.append("since", params.since);
+    if (params?.limit) queryParams.append("limit", params.limit.toString());
+    if (params?.host) queryParams.append("host", params.host);
+    if (params?.port) queryParams.append("port", params.port.toString());
+    if (params?.database) queryParams.append("database", params.database);
+    if (params?.user) queryParams.append("user", params.user);
+    if (params?.password) queryParams.append("password", params.password);
+
+    const qs = queryParams.toString();
+    const url = qs
+      ? `${API_BASE_URL}/experiments/${encodeURIComponent(name)}/logs?${qs}`
+      : `${API_BASE_URL}/experiments/${encodeURIComponent(name)}/logs`;
+
+    return this.fetchJson<LogsResponse>(url);
   }
 }
 

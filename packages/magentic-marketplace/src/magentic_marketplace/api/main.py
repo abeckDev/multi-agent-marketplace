@@ -9,12 +9,20 @@ This module provides REST API endpoints for:
 """
 
 import asyncio
+import json
 import logging
 from datetime import UTC, datetime
 from pathlib import Path
 
 import asyncpg
-from fastapi import BackgroundTasks, FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Query
+from fastapi import (
+    BackgroundTasks,
+    FastAPI,
+    HTTPException,
+    Query,
+    WebSocket,
+    WebSocketDisconnect,
+)
 
 from magentic_marketplace.api.models import (
     DatasetInfo,
@@ -475,8 +483,12 @@ async def list_experiments(
 @app.get("/api/experiments/{name}/logs", response_model=LogsResponse)
 async def get_experiment_logs(
     name: str,
-    since: str | None = Query(None, description="Get logs after this timestamp (ISO format)"),
-    limit: int = Query(100, ge=1, le=1000, description="Maximum number of logs to return"),
+    since: str | None = Query(
+        None, description="Get logs after this timestamp (ISO format)"
+    ),
+    limit: int = Query(
+        100, ge=1, le=1000, description="Maximum number of logs to return"
+    ),
     host: str = Query("localhost", description="PostgreSQL host"),
     port: int = Query(5432, description="PostgreSQL port"),
     database: str = Query("marketplace", description="Database name"),
@@ -600,6 +612,9 @@ async def get_experiment_logs(
             logs = []
             for row in rows:
                 data = row["data"]
+                # Parse JSON if data is a string
+                if isinstance(data, str):
+                    data = json.loads(data)
                 log_entry = LogEntry(
                     timestamp=row["created_at"],
                     level=data.get("level", "info"),
@@ -771,6 +786,9 @@ async def websocket_experiment_logs(
                 # Send new logs
                 for row in rows:
                     data = row["data"]
+                    # Parse JSON if data is a string
+                    if isinstance(data, str):
+                        data = json.loads(data)
                     log_entry = LogEntry(
                         timestamp=row["created_at"],
                         level=data.get("level", "info"),

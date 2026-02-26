@@ -11,10 +11,33 @@ import {
 } from "../services/orchestrator";
 
 function Dashboard() {
+  // Helper to load running experiments from localStorage
+  const loadRunningExperimentsFromStorage = (): Map<string, ExperimentStatus> => {
+    try {
+      const stored = localStorage.getItem("runningExperiments");
+      if (stored) {
+        const parsed = JSON.parse(stored) as Array<[string, ExperimentStatus]>;
+        return new Map(parsed);
+      }
+    } catch (e) {
+      console.error("Failed to load running experiments from storage:", e);
+    }
+    return new Map();
+  };
+
+  // Helper to save running experiments to localStorage
+  const saveRunningExperimentsToStorage = (experiments: Map<string, ExperimentStatus>) => {
+    try {
+      localStorage.setItem("runningExperiments", JSON.stringify(Array.from(experiments.entries())));
+    } catch (e) {
+      console.error("Failed to save running experiments to storage:", e);
+    }
+  };
+
   const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
   const [experiments, setExperiments] = useState<ExperimentInfo[]>([]);
   const [runningExperiments, setRunningExperiments] = useState<Map<string, ExperimentStatus>>(
-    new Map(),
+    loadRunningExperimentsFromStorage(),
   );
 
   const [loading, setLoading] = useState(true);
@@ -39,6 +62,24 @@ function Dashboard() {
         password: postgresPassword,
       });
       setExperiments(experimentsData);
+
+      // Check status of each experiment and populate runningExperiments Map
+      const runningStatuses = new Map<string, ExperimentStatus>();
+      for (const exp of experimentsData) {
+        try {
+          const status = await orchestratorService.getExperimentStatus(exp.schema_name);
+          if (status.status === "pending" || status.status === "running") {
+            runningStatuses.set(exp.schema_name, status);
+          }
+        } catch (err) {
+          // Experiment might not have status info, skip it
+          console.debug(`No status for experiment ${exp.schema_name}:`, err);
+        }
+      }
+      
+      if (runningStatuses.size > 0) {
+        setRunningExperiments((prev: Map<string, ExperimentStatus>) => new Map([...prev, ...runningStatuses]));
+      }
     } catch (err) {
       console.error("Failed to load experiments:", err);
     }
@@ -83,7 +124,16 @@ function Dashboard() {
     }
 
     if (statusUpdates.size > 0) {
-      setRunningExperiments((prev) => new Map([...prev, ...statusUpdates]));
+      setRunningExperiments((prev: Map<string, ExperimentStatus>) => {
+        const updated = new Map([...prev, ...statusUpdates]);
+        // Remove completed or failed experiments from the running experiments map
+        for (const [name, status] of updated.entries()) {
+          if (status.status === "completed" || status.status === "failed") {
+            updated.delete(name);
+          }
+        }
+        return updated;
+      });
 
       // Reload experiments list if any completed
       const hasCompleted = Array.from(statusUpdates.values()).some(
@@ -100,6 +150,16 @@ function Dashboard() {
     loadInitialData();
     loadExperiments();
   }, [loadInitialData, loadExperiments]);
+
+  // Poll running experiments immediately on mount (for experiments loaded from storage)
+  useEffect(() => {
+    pollRunningExperiments();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Save running experiments to localStorage whenever they change
+  useEffect(() => {
+    saveRunningExperimentsToStorage(runningExperiments);
+  }, [runningExperiments]);
 
   // Poll experiment status
   useEffect(() => {
@@ -140,7 +200,7 @@ function Dashboard() {
       );
 
       const status = await orchestratorService.createExperiment(config);
-      setRunningExperiments((prev) => new Map(prev).set(status.name, status));
+      setRunningExperiments((prev: Map<string, ExperimentStatus>) => new Map(prev).set(status.name, status));
 
       // Clear form
       setExperimentName("");

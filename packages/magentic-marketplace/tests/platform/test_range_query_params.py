@@ -86,6 +86,7 @@ async def database(request) -> AsyncGenerator[BaseDatabaseController]:
                 password=password,
                 min_size=1,
                 max_size=2,
+                mode="create_new",
             ) as db:
                 yield db
         except Exception as e:

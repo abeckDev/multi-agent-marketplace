@@ -1104,7 +1104,7 @@ class PostgreSQLDatabaseController(BaseDatabaseController):
         max_size: int = 50,
         command_timeout: float = 60,
         db_timeout: float = 5,
-        mode: SchemaMode = "create_new",
+        mode: SchemaMode = "existing",
     ):
         """Create a new controller for the given schema.
 
@@ -1119,12 +1119,15 @@ class PostgreSQLDatabaseController(BaseDatabaseController):
             max_size: Maximum connections in pool
             command_timeout: Command timeout in seconds
             db_timeout: Database timeout in seconds
-            mode: schema creation mode
+            mode: schema creation mode (default: 'existing' for safe production use)
 
         Returns:
             PostgreSQLDatabaseController instance
 
         """
+        # Determine SSL: require SSL if POSTGRES_REQUIRE_SSL is set or host is on Azure
+        ssl = _get_ssl_setting(host)
+
         # Create new connection pool and controller
         pool = await asyncpg.create_pool(
             host=host,
@@ -1135,6 +1138,7 @@ class PostgreSQLDatabaseController(BaseDatabaseController):
             min_size=min_size,
             max_size=max_size,
             command_timeout=command_timeout,
+            ssl=ssl,
         )
 
         controller = PostgreSQLDatabaseController(pool, db_timeout, schema)
@@ -1210,6 +1214,24 @@ class PostgreSQLDatabaseController(BaseDatabaseController):
         _dump_metrics_to_file("postgresql_metrics")
 
 
+def _get_ssl_setting(host: str) -> str | None:
+    """Determine asyncpg SSL setting based on environment and host.
+
+    Enables SSL when POSTGRES_REQUIRE_SSL is set to a truthy value, or when
+    the host is an Azure-managed PostgreSQL server (ends with .azure.com).
+
+    Args:
+        host: PostgreSQL server hostname
+
+    Returns:
+        'require' if SSL should be enforced, None otherwise
+
+    """
+    ssl_env = os.environ.get("POSTGRES_REQUIRE_SSL", "").lower()
+    require_ssl = ssl_env in ("true", "1", "yes", "require") or host.endswith(".azure.com")
+    return "require" if require_ssl else None
+
+
 @asynccontextmanager
 async def connect_to_postgresql_database(
     schema: str,
@@ -1221,7 +1243,7 @@ async def connect_to_postgresql_database(
     min_size: int = 2,
     max_size: int = 10,
     command_timeout: float = 60,
-    mode: SchemaMode = "create_new",
+    mode: SchemaMode = "existing",
 ):
     """Create PostgreSQL database controller with connection pooling.
 
@@ -1235,7 +1257,7 @@ async def connect_to_postgresql_database(
         min_size: Minimum connections in pool
         max_size: Maximum connections in pool
         command_timeout: Command timeout in seconds
-        mode: Schema creation mode (default: 'create_new')
+        mode: Schema creation mode (default: 'existing' for safe production use)
 
     """
     # Use environment variables as defaults if parameters are not provided
@@ -1244,6 +1266,9 @@ async def connect_to_postgresql_database(
     database = database or os.environ.get("POSTGRES_DB", "marketplace")
     user = user or os.environ.get("POSTGRES_USER", "postgres")
     password = password or os.environ.get("POSTGRES_PASSWORD")
+
+    # Determine SSL: require SSL if POSTGRES_REQUIRE_SSL is set or host is on Azure
+    ssl = _get_ssl_setting(host)
 
     pool = await asyncpg.create_pool(
         host=host,
@@ -1254,6 +1279,7 @@ async def connect_to_postgresql_database(
         min_size=min_size,
         max_size=max_size,
         command_timeout=command_timeout,
+        ssl=ssl,
     )
 
     controller = PostgreSQLDatabaseController(pool, schema=schema)

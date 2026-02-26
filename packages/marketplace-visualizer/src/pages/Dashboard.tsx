@@ -76,9 +76,11 @@ function Dashboard() {
           console.debug(`No status for experiment ${exp.schema_name}:`, err);
         }
       }
-      
+
       if (runningStatuses.size > 0) {
-        setRunningExperiments((prev: Map<string, ExperimentStatus>) => new Map([...prev, ...runningStatuses]));
+        setRunningExperiments(
+          (prev: Map<string, ExperimentStatus>) => new Map([...prev, ...runningStatuses]),
+        );
       }
     } catch (err) {
       console.error("Failed to load experiments:", err);
@@ -200,7 +202,9 @@ function Dashboard() {
       );
 
       const status = await orchestratorService.createExperiment(config);
-      setRunningExperiments((prev: Map<string, ExperimentStatus>) => new Map(prev).set(status.name, status));
+      setRunningExperiments((prev: Map<string, ExperimentStatus>) =>
+        new Map(prev).set(status.name, status),
+      );
 
       // Clear form
       setExperimentName("");

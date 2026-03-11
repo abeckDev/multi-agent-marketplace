@@ -495,62 +495,39 @@ docker run -p 8000:8000 \
 
 ### Azure Container Apps
 
-The unified server is ideal for Azure Container Apps deployment:
+#### One-Click Deploy
 
-1. **Create Azure resources**:
+The `infra/main.bicep` template provisions everything needed:
 
-   ```bash
-   # Create resource group
-   az group create --name magentic-rg --location eastus
+- Container App (pulling from GHCR)
+- PostgreSQL Flexible Server (SSL enforced)
+- User-Assigned Managed Identity (auto-authenticates to Azure AI Foundry)
+- Log Analytics workspace
 
-   # Create PostgreSQL Flexible Server
-   az postgres flexible-server create \
-     --resource-group magentic-rg \
-     --name magentic-db \
-     --admin-user adminuser \
-     --admin-password <strong-password> \
-     --sku-name Standard_D2s_v3 \
-     --tier GeneralPurpose \
-     --storage-size 32
+**Deploy via CLI:**
 
-   # Create Container Apps environment
-   az containerapp env create \
-     --name magentic-env \
-     --resource-group magentic-rg \
-     --location eastus
-   ```
+```bash
+# Create a resource group (if you don't have one)
+az group create --name mulit-agent-marketplace-rg --location swedencentral
 
-2. **Deploy the container**:
+# Deploy everything
+az deployment group create \
+  --resource-group mulit-agent-marketplace-rg \
+  --template-file infra/main.bicep \
+  --parameters \
+    azureOpenAiEndpoint='https://your-resource.openai.azure.com/' \
+    postgresAdminPassword='YourStr0ngP@ssword!'
+```
 
-   ```bash
-   az containerapp create \
-     --name magentic-marketplace \
-     --resource-group magentic-rg \
-     --environment magentic-env \
-     --image your-registry.azurecr.io/magentic-marketplace:latest \
-     --target-port 8000 \
-     --ingress external \
-     --env-vars \
-       OPENAI_API_KEY=secretref:openai-key \
-       LLM_PROVIDER=openai \
-       LLM_MODEL=gpt-4o \
-       POSTGRES_HOST=magentic-db.postgres.database.azure.com \
-       POSTGRES_USER=adminuser \
-       POSTGRES_PASSWORD=secretref:db-password
-   ```
+After deployment (~5 min), the output will show your application URL.
 
-3. **Configure secrets**:
+#### Container Image
 
-   ```bash
-   az containerapp secret set \
-     --name magentic-marketplace \
-     --resource-group magentic-rg \
-     --secrets \
-       openai-key=<your-openai-key> \
-       db-password=<your-db-password>
-   ```
+The container image is published to GitHub Container Registry on every push to `main`:
 
-> **Note**: This repository does not include Bicep/Terraform IaC templates yet. Contributions welcome!
+```bash
+docker pull ghcr.io/abeckdev/hosted-multi-agent-marketplace:latest
+```
 
 ### Environment Variables
 

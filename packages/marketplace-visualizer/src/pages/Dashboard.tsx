@@ -56,11 +56,7 @@ function Dashboard() {
 
   const loadExperiments = useCallback(async () => {
     try {
-      const experimentsData = await orchestratorService.getExperiments({
-        host: postgresHost,
-        port: postgresPort,
-        password: postgresPassword,
-      });
+      const experimentsData = await orchestratorService.getExperiments();
       setExperiments(experimentsData);
 
       // Check status of each experiment and populate runningExperiments Map
@@ -85,7 +81,7 @@ function Dashboard() {
     } catch (err) {
       console.error("Failed to load experiments:", err);
     }
-  }, [postgresHost, postgresPort, postgresPassword]);
+  }, []);
 
   const loadInitialData = useCallback(async () => {
     setLoading(true);
@@ -184,22 +180,7 @@ function Dashboard() {
         search_algorithm: searchAlgorithm,
         search_bandwidth: searchBandwidth,
         customer_max_steps: customerMaxSteps,
-        postgres_host: postgresHost,
-        postgres_port: postgresPort,
-        postgres_password: postgresPassword,
       };
-
-      // Save DB config to localStorage for the running experiment page
-      localStorage.setItem(
-        "experimentDbConfig",
-        JSON.stringify({
-          host: postgresHost,
-          port: postgresPort,
-          database: "marketplace",
-          user: "postgres",
-          password: postgresPassword,
-        }),
-      );
 
       const status = await orchestratorService.createExperiment(config);
       setRunningExperiments((prev: Map<string, ExperimentStatus>) =>

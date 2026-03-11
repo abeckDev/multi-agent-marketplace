@@ -142,6 +142,9 @@ class OpenAIClient(ProviderClient[OpenAIConfig]):
             if reasoning_effort is not None and "o1" not in model:
                 if reasoning_effort == "minimal":
                     reasoning_effort = "low"  # o models don't support minimal
+                # gpt-5.x-chat models only support 'medium' reasoning_effort
+                if "gpt-5" in model and reasoning_effort in ("minimal", "low"):
+                    reasoning_effort = "medium"
                 args["reasoning_effort"] = reasoning_effort
         else:
             # Non-reasoning models

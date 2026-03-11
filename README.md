@@ -84,8 +84,8 @@ graph TB
 1. **Clone this repository**
 
    ```bash
-   git clone https://github.com/abeckDev/multi-agent-marketplace.git
-   cd multi-agent-marketplace
+   git clone https://github.com/abeckDev/hosted-multi-agent-marketplace.git
+   cd hosted-multi-agent-marketplace
    ```
 
 2. **Install Python dependencies**
@@ -101,28 +101,7 @@ graph TB
    cp sample.env .env
    ```
 
-   Edit `.env` to add your LLM API keys and model configuration:
-
-   ```bash
-   # Required: Choose your LLM provider
-   LLM_PROVIDER=openai              # Options: openai, gemini, anthropic, azure_openai
-   LLM_MODEL=gpt-4o                # Model name for your chosen provider
-   
-   # Required: Add API key for your provider
-   OPENAI_API_KEY=sk-...           # If using OpenAI
-   # ANTHROPIC_API_KEY=...          # If using Anthropic
-   # GOOGLE_API_KEY=...             # If using Gemini
-   
-   # Optional: LLM behavior tuning
-   LLM_TEMPERATURE=0.7
-   LLM_MAX_TOKENS=4000
-   LLM_MAX_CONCURRENCY=20          # Reduce to 10 if you hit rate limits
-   
-   # Database (defaults work with docker-compose)
-   POSTGRES_PASSWORD=postgres
-   POSTGRES_USER=postgres
-   POSTGRES_DB=marketplace
-   ```
+   Edit `.env` with your LLM provider and credentials. The file is pre-commented with all available options — just uncomment and fill in the values for your provider. See the [Environment Variables](#environment-variables) section for details.
 
 4. **Start the PostgreSQL database**
 
@@ -225,9 +204,6 @@ Create and launch a new experiment in the background.
   "search_algorithm": "simple",
   "search_bandwidth": 10,
   "customer_max_steps": null,
-  "postgres_host": "localhost",
-  "postgres_port": 5432,
-  "postgres_password": "postgres",
   "override": false
 }
 ```
@@ -266,7 +242,6 @@ List all experiments stored in PostgreSQL with metadata.
 
 **Query Parameters:**
 - `limit` (optional): Maximum number of experiments to return
-- `host`, `port`, `database`, `user`, `password` (optional): Database connection overrides
 
 **Example Response:**
 ```json
@@ -440,93 +415,107 @@ multi-agent-marketplace/
 
 ## Deployment
 
-### Docker Deployment (Recommended)
+### Azure Container Apps (Recommended)
 
-This fork is designed for containerized deployment with all components in a single container.
+Deploy the entire stack to Azure with a single command — no Docker build needed. The pre-built public container image is pulled automatically.
 
-**Example Dockerfile:**
+**Prerequisites:**
+- [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) installed and logged in (`az login`)
+- An [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/) resource with a deployed model (authentication uses Entra ID / Managed Identity — no API keys needed)
 
-```dockerfile
-# Multi-stage build for efficient image
-FROM node:18-alpine AS frontend-build
-WORKDIR /app/frontend
-COPY packages/marketplace-visualizer/package*.json ./
-RUN npm ci
-COPY packages/marketplace-visualizer/ ./
-RUN npm run build
+#### One-Command Deploy (Recommended)
 
-FROM python:3.11-slim
-WORKDIR /app
+The deploy script validates prerequisites, prompts for configuration, and provisions everything:
 
-# Install uv for faster Python dependency management
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
-
-# Copy Python package
-COPY packages/magentic-marketplace/ ./magentic-marketplace/
-RUN cd magentic-marketplace && uv pip install --system -e .
-
-# Copy built frontend from stage 1
-COPY --from=frontend-build /app/frontend/dist ./magentic-marketplace/src/magentic_marketplace/ui/dist
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV HOST=0.0.0.0
-ENV PORT=8000
-
-# Expose port
-EXPOSE 8000
-
-# Run unified server
-CMD ["magentic-marketplace", "serve", "--host", "0.0.0.0", "--port", "8000"]
+**Linux / macOS:**
+```bash
+./scripts/deploy.sh
 ```
 
-**Build and run:**
+**Windows (PowerShell):**
+```powershell
+.\scripts\deploy.ps1
+```
+
+The script will interactively ask for your Azure OpenAI endpoint and model name. Or pass parameters directly:
 
 ```bash
+# Minimal — just the endpoint
+./scripts/deploy.sh --azure-openai-endpoint "https://your-resource.openai.azure.com/"
+
+# Full customization
+./scripts/deploy.sh \
+  --resource-group my-rg \
+  --location swedencentral \
+  --azure-openai-endpoint "https://your-resource.openai.azure.com/" \
+  --model gpt-5.3-chat
+```
+
+#### Manual Deploy (az CLI)
+
+```bash
+# Create a resource group (if you don't have one)
+az group create --name my-marketplace-rg --location swedencentral
+
+# Deploy everything
+az deployment group create \
+  --resource-group my-marketplace-rg \
+  --template-file infra/main.bicep \
+  --parameters \
+    azureOpenAiEndpoint='https://your-resource.openai.azure.com/' \
+    postgresAdminPassword='MyStr0ngPassword123'
+```
+
+> **Note:** Avoid special characters like `@`, `!`, or `$` in the password — they can get mangled by shell escaping during deployment.
+
+After deployment (~5 min), the output will show your application URL.
+
+**What gets provisioned:**
+- Container App (pulling from GHCR)
+- PostgreSQL Flexible Server (SSL enforced)
+- User-Assigned Managed Identity (auto-authenticates to Azure OpenAI)
+- Log Analytics workspace
+
+> **Using your own fork with a private GHCR image?** Add these extra parameters:
+> ```
+> containerImage='ghcr.io/<your-github-username>/hosted-multi-agent-marketplace:latest'
+> ghcrUsername='<your-github-username>'
+> ghcrToken='ghp_xxxxxxxxxxxxxxxxxxxx'
+> ```
+
+### Docker Deployment (Local)
+
+Run locally using the included Dockerfile:
+
+```bash
+# Build the image
 docker build -t magentic-marketplace .
+
+# Run with your LLM provider
+# With OpenAI
 docker run -p 8000:8000 \
-  -e OPENAI_API_KEY=$OPENAI_API_KEY \
   -e LLM_PROVIDER=openai \
   -e LLM_MODEL=gpt-4o \
+  -e OPENAI_API_KEY=$OPENAI_API_KEY \
+  -e POSTGRES_HOST=your-db-host \
+  -e POSTGRES_PASSWORD=your-db-password \
+  magentic-marketplace
+
+# With Azure OpenAI (Entra ID auth)
+docker run -p 8000:8000 \
+  -e LLM_PROVIDER=azure_openai \
+  -e LLM_MODEL=gpt-5.3-chat \
+  -e AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/ \
+  -e AZURE_OPENAI_USE_ENTRA_ID=true \
   -e POSTGRES_HOST=your-db-host \
   -e POSTGRES_PASSWORD=your-db-password \
   magentic-marketplace
 ```
 
-### Azure Container Apps
-
-#### One-Click Deploy
-
-The `infra/main.bicep` template provisions everything needed:
-
-- Container App (pulling from GHCR)
-- PostgreSQL Flexible Server (SSL enforced)
-- User-Assigned Managed Identity (auto-authenticates to Azure AI Foundry)
-- Log Analytics workspace
-
-**Deploy via CLI:**
+Or pull the pre-built image directly:
 
 ```bash
-# Create a resource group (if you don't have one)
-az group create --name mulit-agent-marketplace-rg --location swedencentral
-
-# Deploy everything
-az deployment group create \
-  --resource-group mulit-agent-marketplace-rg \
-  --template-file infra/main.bicep \
-  --parameters \
-    azureOpenAiEndpoint='https://your-resource.openai.azure.com/' \
-    postgresAdminPassword='YourStr0ngP@ssword!'
-```
-
-After deployment (~5 min), the output will show your application URL.
-
-#### Container Image
-
-The container image is published to GitHub Container Registry on every push to `main`:
-
-```bash
-docker pull ghcr.io/abeckdev/hosted-multi-agent-marketplace:latest
+docker pull ghcr.io/glejdis/hosted-multi-agent-marketplace:latest
 ```
 
 ### Environment Variables
@@ -535,10 +524,16 @@ Configure these environment variables for deployment:
 
 **Required:**
 - `LLM_PROVIDER` — LLM provider: `openai`, `gemini`, `anthropic`, or `azure_openai`
-- `LLM_MODEL` — Model name (e.g., `gpt-4o`, `gemini-1.5-pro`)
-- `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `GOOGLE_API_KEY` — API key for your chosen provider
+- `LLM_MODEL` — Model name (e.g., `gpt-4o`, `gpt-5.3-chat`, `gemini-1.5-pro`)
 - `POSTGRES_HOST` — PostgreSQL hostname
 - `POSTGRES_PASSWORD` — PostgreSQL password
+
+**Provider-specific (one required depending on `LLM_PROVIDER`):**
+- `OPENAI_API_KEY` — Required for `openai` provider
+- `ANTHROPIC_API_KEY` — Required for `anthropic` provider
+- `GOOGLE_API_KEY` — Required for `gemini` provider
+- `AZURE_OPENAI_ENDPOINT` — Required for `azure_openai` provider
+- `AZURE_OPENAI_USE_ENTRA_ID` — Set to `true` for Managed Identity auth (recommended for Azure deployments)
 
 **Optional:**
 - `POSTGRES_PORT` — Database port (default: 5432)

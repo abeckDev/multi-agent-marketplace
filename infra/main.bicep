@@ -18,7 +18,14 @@ param azureOpenAiApiVersion string = '2024-08-01-preview'
 param postgresAdminPassword string
 
 @description('Container image to deploy')
-param containerImage string = 'ghcr.io/abeckdev/hosted-multi-agent-marketplace:latest'
+param containerImage string = 'ghcr.io/glejdis/hosted-multi-agent-marketplace:latest'
+
+@description('GitHub username for GHCR authentication (only needed if GHCR package is private)')
+param ghcrUsername string = ''
+
+@description('GitHub Container Registry PAT (only needed if GHCR package is private). Create at https://github.com/settings/tokens with read:packages scope.')
+@secure()
+param ghcrToken string = ''
 
 // ──────────────────────────────────────────────
 // 1. User-Assigned Managed Identity
@@ -150,7 +157,18 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           name: 'postgres-password'
           value: postgresAdminPassword
         }
+        {
+          name: 'ghcr-password'
+          value: !empty(ghcrToken) ? ghcrToken : 'placeholder'
+        }
       ]
+      registries: !empty(ghcrToken) ? [
+        {
+          server: 'ghcr.io'
+          username: ghcrUsername
+          passwordSecretRef: 'ghcr-password'
+        }
+      ] : []
     }
     template: {
       containers: [
@@ -163,6 +181,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
           }
           env: [
             { name: 'LLM_PROVIDER', value: 'azure_openai' }
+            { name: 'LLM_MODEL', value: azureOpenAiDeploymentName }
             { name: 'AZURE_OPENAI_ENDPOINT', value: azureOpenAiEndpoint }
             { name: 'AZURE_OPENAI_DEPLOYMENT_NAME', value: azureOpenAiDeploymentName }
             { name: 'AZURE_OPENAI_API_VERSION', value: azureOpenAiApiVersion }
@@ -173,6 +192,7 @@ resource containerApp 'Microsoft.App/containerApps@2023-05-01' = {
             { name: 'POSTGRES_USER', value: postgresAdminUser }
             { name: 'POSTGRES_PASSWORD', secretRef: 'postgres-password' }
             { name: 'POSTGRES_REQUIRE_SSL', value: 'true' }
+            { name: 'LLM_REASONING_EFFORT', value: 'medium' }
           ]
         }
       ]

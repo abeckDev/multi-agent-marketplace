@@ -1,5 +1,6 @@
 """Pydantic models for API request and response validation."""
 
+import os
 from datetime import datetime
 from typing import Any, Literal
 
@@ -27,9 +28,18 @@ class ExperimentCreate(BaseModel):
     customer_max_steps: int | None = Field(
         None, description="Max agent steps before stopping"
     )
-    postgres_host: str = Field("localhost", description="PostgreSQL host")
-    postgres_port: int = Field(5432, description="PostgreSQL port")
-    postgres_password: str = Field("postgres", description="PostgreSQL password")
+    postgres_host: str = Field(
+        default_factory=lambda: os.environ.get("POSTGRES_HOST", "localhost"),
+        description="PostgreSQL host",
+    )
+    postgres_port: int = Field(
+        default_factory=lambda: int(os.environ.get("POSTGRES_PORT", "5432")),
+        description="PostgreSQL port",
+    )
+    postgres_password: str = Field(
+        default_factory=lambda: os.environ.get("POSTGRES_PASSWORD", "postgres"),
+        description="PostgreSQL password",
+    )
     db_pool_min_size: int = Field(2, description="Database connection pool min size")
     db_pool_max_size: int = Field(10, description="Database connection pool max size")
     server_host: str = Field("127.0.0.1", description="Server host")

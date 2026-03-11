@@ -11,10 +11,12 @@ This module provides REST API endpoints for:
 import asyncio
 import json
 import logging
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 
 import asyncpg
+from magentic_marketplace.platform.database.postgresql.postgresql import _get_ssl_setting
 from fastapi import (
     BackgroundTasks,
     FastAPI,
@@ -185,8 +187,8 @@ async def get_settings():
     return SettingsResponse(
         default_search_algorithm="simple",
         default_search_bandwidth=10,
-        default_postgres_host="localhost",
-        default_postgres_port=5432,
+        default_postgres_host=os.environ.get("POSTGRES_HOST", "localhost"),
+        default_postgres_port=int(os.environ.get("POSTGRES_PORT", "5432")),
         available_providers=list(ALLOWED_LLM_PROVIDERS),
     )
 
@@ -306,11 +308,11 @@ async def get_experiment_status(name: str):
 @app.get("/api/experiments", response_model=list[ExperimentInfo])
 async def list_experiments(
     limit: int | None = None,
-    host: str = "localhost",
-    port: int = 5432,
-    database: str = "marketplace",
-    user: str = "postgres",
-    password: str = "postgres",
+    host: str = Query(default=None, description="PostgreSQL host"),
+    port: int = Query(default=None, description="PostgreSQL port"),
+    database: str = Query(default=None, description="Database name"),
+    user: str = Query(default=None, description="Database user"),
+    password: str = Query(default=None, description="Database password"),
 ):
     """List previous and running experiments from PostgreSQL.
 
@@ -332,6 +334,11 @@ async def list_experiments(
         HTTPException: If database connection fails
 
     """
+    host = host or os.environ.get("POSTGRES_HOST", "localhost")
+    port = port or int(os.environ.get("POSTGRES_PORT", "5432"))
+    database = database or os.environ.get("POSTGRES_DB", "marketplace")
+    user = user or os.environ.get("POSTGRES_USER", "postgres")
+    password = password or os.environ.get("POSTGRES_PASSWORD", "postgres")
     try:
         # Connect to PostgreSQL
         conn = await asyncpg.connect(
@@ -340,6 +347,7 @@ async def list_experiments(
             database=database,
             user=user,
             password=password,
+            ssl=_get_ssl_setting(host),
         )
 
         try:
@@ -489,11 +497,11 @@ async def get_experiment_logs(
     limit: int = Query(
         100, ge=1, le=1000, description="Maximum number of logs to return"
     ),
-    host: str = Query("localhost", description="PostgreSQL host"),
-    port: int = Query(5432, description="PostgreSQL port"),
-    database: str = Query("marketplace", description="Database name"),
-    user: str = Query("postgres", description="Database user"),
-    password: str = Query("postgres", description="Database password"),
+    host: str = Query(default=None, description="PostgreSQL host"),
+    port: int = Query(default=None, description="PostgreSQL port"),
+    database: str = Query(default=None, description="Database name"),
+    user: str = Query(default=None, description="Database user"),
+    password: str = Query(default=None, description="Database password"),
 ):
     """Get recent logs for a specific experiment (REST fallback).
 
@@ -517,6 +525,11 @@ async def get_experiment_logs(
         HTTPException: If experiment not found or invalid
 
     """
+    host = host or os.environ.get("POSTGRES_HOST", "localhost")
+    port = port or int(os.environ.get("POSTGRES_PORT", "5432"))
+    database = database or os.environ.get("POSTGRES_DB", "marketplace")
+    user = user or os.environ.get("POSTGRES_USER", "postgres")
+    password = password or os.environ.get("POSTGRES_PASSWORD", "postgres")
     # Validate schema name to prevent SQL injection
     # After validation, it's safe to use in f-strings for schema/table names
     # (PostgreSQL doesn't support parameterized identifiers like $1 for schema names)
@@ -534,6 +547,7 @@ async def get_experiment_logs(
             database=database,
             user=user,
             password=password,
+            ssl=_get_ssl_setting(host),
         )
 
         try:
@@ -645,11 +659,11 @@ async def websocket_experiment_logs(
     websocket: WebSocket,
     name: str,
     since: str | None = Query(None, description="Start streaming from this timestamp"),
-    host: str = Query("localhost", description="PostgreSQL host"),
-    port: int = Query(5432, description="PostgreSQL port"),
-    database: str = Query("marketplace", description="Database name"),
-    user: str = Query("postgres", description="Database user"),
-    password: str = Query("postgres", description="Database password"),
+    host: str = Query(default=None, description="PostgreSQL host"),
+    port: int = Query(default=None, description="PostgreSQL port"),
+    database: str = Query(default=None, description="Database name"),
+    user: str = Query(default=None, description="Database user"),
+    password: str = Query(default=None, description="Database password"),
 ):
     """Stream live logs for a running experiment via WebSocket.
 
@@ -667,6 +681,11 @@ async def websocket_experiment_logs(
         password: Database password
 
     """
+    host = host or os.environ.get("POSTGRES_HOST", "localhost")
+    port = port or int(os.environ.get("POSTGRES_PORT", "5432"))
+    database = database or os.environ.get("POSTGRES_DB", "marketplace")
+    user = user or os.environ.get("POSTGRES_USER", "postgres")
+    password = password or os.environ.get("POSTGRES_PASSWORD", "postgres")
     # Validate schema name to prevent SQL injection
     # After validation, it's safe to use in f-strings for schema/table names
     # (PostgreSQL doesn't support parameterized identifiers like $1 for schema names)
@@ -686,6 +705,7 @@ async def websocket_experiment_logs(
                 database=database,
                 user=user,
                 password=password,
+                ssl=_get_ssl_setting(host),
             )
         except Exception as e:
             error_msg = LogStreamMessage(

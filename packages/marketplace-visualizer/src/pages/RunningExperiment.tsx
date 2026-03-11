@@ -18,30 +18,11 @@ function RunningExperiment() {
   const lastTimestamp = useRef<string | null>(null);
   const isMounted = useRef(true);
 
-  // Get database config from localStorage or use defaults
-  const getDbConfig = useCallback(() => {
-    try {
-      const saved = localStorage.getItem("experimentDbConfig");
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch (e) {
-      console.error("Failed to load DB config:", e);
-    }
-    return {
-      host: "localhost",
-      port: 5432,
-      database: "marketplace",
-      user: "postgres",
-      password: "postgres",
-    };
-  }, []);
+
 
   // Poll logs and status
   const poll = useCallback(async () => {
     if (!name || !isMounted.current) return;
-
-    const dbConfig = getDbConfig();
 
     try {
       // Poll experiment status
@@ -49,15 +30,10 @@ function RunningExperiment() {
       if (!isMounted.current) return;
       setExperimentStatus(statusData.status);
 
-      // Poll logs
+      // Poll logs (server uses its own env var DB credentials)
       const logsData = await orchestratorService.getExperimentLogs(name, {
         since: lastTimestamp.current || undefined,
         limit: 200,
-        host: dbConfig.host,
-        port: dbConfig.port,
-        database: dbConfig.database,
-        user: dbConfig.user,
-        password: dbConfig.password,
       });
       if (!isMounted.current) return;
 
@@ -93,7 +69,7 @@ function RunningExperiment() {
     if (isMounted.current) {
       pollTimer.current = window.setTimeout(poll, 2000);
     }
-  }, [name, navigate, getDbConfig]);
+  }, [name, navigate]);
 
   // Start polling on mount
   useEffect(() => {

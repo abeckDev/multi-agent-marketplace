@@ -1,5 +1,5 @@
-# Stage 1: Build the React frontend
-FROM node:18-alpine AS frontend-build
+# Stage 1: Build the React frontend (runs on native platform to avoid QEMU issues)
+FROM --platform=$BUILDPLATFORM node:18-alpine AS frontend-build
 WORKDIR /app/packages/marketplace-visualizer
 COPY packages/marketplace-visualizer/package*.json ./
 RUN npm ci

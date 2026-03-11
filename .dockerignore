@@ -1,0 +1,30 @@
+# Environment files - do not copy secrets or local dev config into container images
+.env
+*.env
+.envrc
+dev.env
+
+# Development artifacts
+.git
+.github
+.vscode
+.devcontainer
+__pycache__/
+*.py[codz]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node modules
+node_modules/
+dist/
+build/
+
+# Test artifacts
+htmlcov/
+.coverage
+.tox/
+
+# Documentation
+docs/

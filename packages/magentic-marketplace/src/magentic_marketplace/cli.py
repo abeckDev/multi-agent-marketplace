@@ -169,8 +169,9 @@ def run_api_command(args):
     """Handle the API subcommand to launch the orchestrator API."""
     import uvicorn
 
-    # Load environment variables before importing the app
-    load_dotenv(".env")
+    # Load environment variables from .env if present; do not override existing env vars
+    # (override=False ensures cloud-injected env vars like Azure Container Apps settings take precedence)
+    load_dotenv(dotenv_path=".env", override=False)
 
     from magentic_marketplace.api.main import app
 
@@ -184,8 +185,9 @@ def run_api_command(args):
 
 def run_serve_command(args):
     """Handle the serve subcommand to launch the unified server."""
-    # Load environment variables before importing modules that use config
-    load_dotenv(".env")
+    # Load environment variables from .env if present; do not override existing env vars
+    # (override=False ensures cloud-injected env vars like Azure Container Apps settings take precedence)
+    load_dotenv(dotenv_path=".env", override=False)
 
     from magentic_marketplace.unified_server import run_unified_server
 

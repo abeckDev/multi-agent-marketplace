@@ -49,6 +49,7 @@ async def postgres_test_db() -> AsyncGenerator[PostgreSQLDatabaseController]:
             host="localhost",
             port=5432,
             password="postgres",
+            mode="create_new",
         ) as db:
             yield db
     finally:
